@@ -7,8 +7,8 @@ Goals:
 - AGENTS.md: every new feature must be 100 % covered by unit tests
 - Unit tests covering 100 % of the existing code
 
-Spec: [2026-11-24-testing-and-ci](../specs/2026-11-24-testing-and-ci.md)
-Status: in-progress
+Spec: [2026-11-24-testing-and-ci](../specs/implemented/2026-11-24-testing-and-ci.md)
+Status: done
 
 ---
 
@@ -18,3 +18,9 @@ Status: in-progress
 - Decisions/pitfalls: no Docker in the sandbox, so the testcontainers path is exercised only in CI; agent-browser rejects Playwright `>>` selectors (use `find role|nth`); `npm audit` reports 7 moderate dev-only advisories via testcontainers → archiver → glob (only "fix" is a 2-major downgrade; left as is).
 - Verified: lint, typecheck, build (also without `DATABASE_URL`), integration 9/9 via `E2E_DATABASE_URL` (throwaway DB dropped, no stray server/sessions); coverage gate exits 1 on an uncovered probe file. `test:coverage` intentionally fails at this commit (no unit tests yet).
 - Remaining: unit tests for the existing code (next commit); first CI run on GitHub.
+
+## 2026-11-24 (unit tests: 100 % coverage)
+- Covers: 26 colocated test files / 83 tests for core (errors, singleton incl. rejected-promise eviction, DI strict mode), db (config env parsing, `getOrm`/`closeOrm` with `MikroORM.init` spied, helpers, base columns, CLI config), app (container scopes, health service/report, `/api/health`, pages + layouts, next.config) and ui (`cn`, badge/button/card/separator variants). Spec moved to `implemented/`.
+- Decisions/pitfalls: assert component classes through `cn(...)` (it dedupes cva output); React 19 injects `<head>` into `<html>` markup; `mikro-orm.config.test.ts` added to the db tsconfig `include`.
+- Verified after a clean `npm ci`: lint, typecheck, `test:coverage` 100 % (106 statements / 47 branches / 44 functions / 99 lines), `test:integration` 9/9; dev server serves `/backend` as `Dashboard · DevMentor Backend` and `/api/health` ok.
+- Remaining: first CI run on GitHub (testcontainers path untested locally, no Docker); marking the jobs as required checks is the repo owner's call.
