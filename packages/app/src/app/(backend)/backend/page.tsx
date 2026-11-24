@@ -14,7 +14,8 @@ import { connection } from "next/server";
 
 import { getHealthReport } from "@/server/health";
 
-export const metadata: Metadata = { title: "Dashboard" };
+// `title.template` from ./layout only applies to child segments, not to this page (same segment).
+export const metadata: Metadata = { title: { absolute: "Dashboard · DevMentor Backend" } };
 
 export default async function BackendDashboardPage() {
   await connection();

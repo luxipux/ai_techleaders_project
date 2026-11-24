@@ -24,12 +24,17 @@ Commands (run from the repo root):
 | `npm run dev` | Next.js dev server (`@devmentor/app`) |
 | `npm run build` / `npm start` | Production build / server (forces `NODE_ENV=production`) |
 | `npm run lint` | ESLint for the whole monorepo, incl. architecture boundary rules |
-| `npm run typecheck` | `tsc --noEmit` in every workspace (app runs `next typegen` first) |
+| `npm run typecheck` | `tsc --noEmit` for the root configs and every workspace (app runs `next typegen` first) |
+| `npm test` / `npm run test:watch` | Unit tests (Vitest), once / in watch mode |
+| `npm run test:coverage` | Unit tests with the **100 % coverage gate** (fails below 100 %) |
+| `npm run test:integration` | Production build + integration tests (ephemeral PostgreSQL, `next start`, agent-browser) |
 | `npm run db:migration:create -- --name <slug>` | Generate a migration from entity changes |
 | `npm run db:migrate` / `db:migrate:down` | Apply / revert migrations |
 | `npm run db:migration:list` / `db:schema:check` | List applied migrations / check for pending schema changes |
 
-Definition of done for every change: `npm run lint`, `npm run typecheck` and `npm run build` pass.
+Definition of done for every change: `npm run lint`, `npm run typecheck`, `npm run build` and
+`npm run test:coverage` (100 %) pass; `npm run test:integration` passes for UI, route, API or
+database changes. CI (`.github/workflows/ci.yml`) enforces all of them on every pull request.
 
 ## Tech stack (fixed)
 
@@ -43,6 +48,9 @@ Definition of done for every change: `npm run lint`, `npm run typecheck` and `np
 | DI | Awilix 14 | `PROXY` injection mode, `strict` container |
 | Frontend styling | Tailwind CSS 4 | Public pages: Tailwind utilities only |
 | Backend UI | shadcn-ui (Radix, `cn`, `lucide-react`) | Admin pages under `/backend` |
+| Unit tests | Vitest 5 (+ `@vitest/coverage-v8`, Testing Library, jsdom) | Root `vitest.config.ts`, 100 % coverage gate |
+| Integration tests | testcontainers (PostgreSQL) + agent-browser | `packages/e2e`, black-box against `next start` |
+| CI | GitHub Actions | `.github/workflows/ci.yml`: lint, typecheck, build, unit, integration |
 
 ## Monorepo layout
 
@@ -52,6 +60,7 @@ packages/
   core/  @devmentor/core  Framework-agnostic reusable code: DI helpers, errors, singletons, utils
   db/    @devmentor/db    Data layer: MikroORM config & lifecycle, entities, migrations, db helpers
   ui/    @devmentor/ui    Reusable UI: shadcn-ui primitives, shared components, theme CSS, `cn`
+  e2e/   @devmentor/e2e   Integration tests: ephemeral PostgreSQL + `next start` + agent-browser
 ```
 
 Packages ship TypeScript **source** (no build step) through `package.json#exports`; Next/Turbopack
@@ -76,6 +85,8 @@ app ──▶ ui
 - **db** depends only on `core` (+ MikroORM). No React, no Next.js APIs (`next/*`), no UI.
 - **ui** never imports `app` or `db`, and never touches the database. Presentational code only.
 - **app** composes everything: routes, DI container, application services, server actions.
+- **e2e** is black-box: it imports no `@devmentor/*` package and talks to the app only over HTTP
+  and agent-browser (it may query its own ephemeral database with `pg`).
 - No circular dependencies between packages.
 
 ### App (`packages/app`)
@@ -157,6 +168,56 @@ app ──▶ ui
 - Expected/domain errors extend `AppError` from `@devmentor/core/errors`.
 - Keep the sandbox manifest `om-sandbox.toml` working (`npm run dev` from the root on `0.0.0.0:3000`).
 
+## Testing (MANDATORY)
+
+### Unit tests: 100 % coverage, no exceptions
+
+- **Every new feature or change ships with unit tests that keep coverage at 100 %** for
+  statements, branches, functions and lines. Coverage below 100 % fails `npm run test:coverage`
+  and the `unit` CI job, so the pull request cannot be merged. Write the tests in the same
+  change as the code, never "later".
+- The gate covers `packages/{core,db,app,ui}/src/**` plus `packages/db/mikro-orm.config.ts` and
+  `packages/app/next.config.ts`. Files that no test imports count as 0 %, so new files can't slip
+  through. Do not narrow `coverage.include`, lower `thresholds`, or add `/* v8 ignore */`
+  comments. If code truly cannot be unit-tested, raise it in the spec and get the user's
+  approval first.
+- Cover behaviour, not just lines: every branch (success, failure, empty and edge inputs) gets an
+  assertion on its observable result. Bug fixes start with a test that reproduces the bug.
+- Tests are colocated: `foo.ts` → `foo.test.ts`. `*.test.ts` runs in Node (project `unit`),
+  `*.test.tsx` in jsdom with Testing Library (project `unit-dom`). Import `describe`/`it`/`expect`/`vi`
+  from `vitest` (no globals).
+- Unit tests never touch a real database, network or browser. Mock at the boundary: a fake `em`
+  (`getConnection().execute`), `vi.spyOn(MikroORM, "init")`, `vi.mock("next/server")`, or
+  `vi.mock("@/server/…")` for pages. `server-only` is aliased to a no-op stub. Clear singletons
+  you create (`clearGlobalSingleton`) and use `vi.stubEnv` for env vars; restored automatically.
+- Async Server Components: `render(await Page())`. `<html>` layouts: `renderToStaticMarkup`.
+
+### Integration tests (`packages/e2e`)
+
+- Add or extend an integration test for every user-visible flow: pages, navigation, Route
+  Handlers, and anything that depends on the database schema. Name files `tests/<area>.e2e.ts`.
+- `npm run test:integration` builds the app and runs the suites. Global setup starts an ephemeral
+  PostgreSQL (testcontainers, `postgres:17-alpine`), runs `npm run db:migrate` against it, starts
+  `next start` on a free port, and tears everything down afterwards. Tests get `inject("baseUrl")`
+  and `inject("databaseUrl")`.
+- Without Docker (e.g. this sandbox), set `E2E_DATABASE_URL` to a PostgreSQL server URL. Setup then
+  creates and drops a throwaway `devmentor_e2e_<random>` database there instead:
+  `E2E_DATABASE_URL="$DATABASE_URL" npm run test:integration`.
+- Drive the browser through `Browser` (`packages/e2e/src/browser.ts`), a typed wrapper over the
+  `agent-browser` CLI. Each instance has its own session, so always `close()` it in `afterAll`.
+  Prefer semantic locators (`clickByRole`), stable `data-slot` hooks and `snapshot()` refs over
+  layout-dependent CSS. agent-browser does not understand Playwright's `>>` selector chains.
+  Assert `pageErrors()` is empty on every page you open. For commands without a helper, use
+  `browser.run(...)` and see `npx agent-browser skills get core`.
+- First-time local setup: `npx agent-browser install` (CI uses `--with-deps`).
+
+### CI
+
+`.github/workflows/ci.yml` runs on every pull request and push to `main`: `lint`, `typecheck`,
+`build`, `unit` (100 % coverage, uploads the `coverage` artifact) and `integration`. All jobs must
+be green before merging. Keep the shared install steps in `.github/actions/setup` and the Node
+version in `.nvmrc`.
+
 ## Working agreements (MANDATORY)
 
 This repo uses spec-driven development with AI metadata stored in `.ai/`. Follow these rules for every task.
@@ -175,7 +236,7 @@ This repo uses spec-driven development with AI metadata stored in `.ai/`. Follow
 ## Working principles
 
 - **Plan complex work first.** For multi-step or multi-file changes, write a plan before editing (plan mode, or the spec for larger features). Aim for a plan good enough to implement in one pass. If implementation goes off track, stop and re-plan instead of pushing forward.
-- **Verify every change.** Don't claim work is done until you've checked it. At minimum, run `npm run lint` and `npm run build`. For UI or runtime changes, run the app and confirm the behavior (see the `workspace-agent` skill). Report failures honestly, and record what you verified in the journal entry.
+- **Verify every change.** Don't claim work is done until you've checked it. At minimum, run `npm run lint`, `npm run build` and `npm run test:coverage`. For UI or runtime changes, run the app and confirm the behavior (see the `workspace-agent` skill). Report failures honestly, and record what you verified in the journal entry.
 - **Fix bugs autonomously.** Given a bug report, failing build, or logs, investigate the root cause and fix it without asking for step-by-step direction. Ask only when requirements are truly ambiguous.
 - **Prefer the elegant solution.** If a fix feels hacky, take what you've learned, discard it, and implement the clean solution before committing.
 - **Use subagents** for broad searches or independent parallel work, so the main context stays focused.
