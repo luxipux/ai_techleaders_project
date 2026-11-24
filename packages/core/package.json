@@ -1,0 +1,19 @@
+{
+  "name": "@devmentor/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./di": "./src/di/index.ts",
+    "./errors": "./src/errors.ts",
+    "./singleton": "./src/singleton.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "awilix": "^14.0.0"
+  }
+}

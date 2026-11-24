@@ -1,0 +1,36 @@
+{
+  "name": "@devmentor/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./entities": "./src/entities/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "mikro-orm": "mikro-orm",
+    "migration:create": "mikro-orm migration:create",
+    "migration:check": "mikro-orm migration:check",
+    "migration:list": "mikro-orm migration:list",
+    "migrate": "mikro-orm migration:up",
+    "migrate:down": "mikro-orm migration:down"
+  },
+  "mikro-orm": {
+    "configPaths": [
+      "./mikro-orm.config.ts"
+    ]
+  },
+  "dependencies": {
+    "@devmentor/core": "*",
+    "@mikro-orm/core": "^7.2.11",
+    "@mikro-orm/postgresql": "^7.2.11"
+  },
+  "devDependencies": {
+    "@mikro-orm/cli": "^7.2.11",
+    "@mikro-orm/migrations": "^7.2.11",
+    "@next/env": "16.4.6",
+    "tsx": "^4.23.15"
+  }
+}
