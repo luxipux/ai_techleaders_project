@@ -23,6 +23,9 @@ npm run dev                     # http://localhost:3000  (backend: /backend)
 | `npm run build` / `npm start` | Production build / server |
 | `npm run lint` | Lint the whole monorepo (incl. architecture boundaries) |
 | `npm run typecheck` | Type-check every workspace |
+| `npm test` / `npm run test:watch` | Unit tests (Vitest) |
+| `npm run test:coverage` | Unit tests + coverage report; fails below 100 % |
+| `npm run test:integration` | Build, then run integration tests (ephemeral PostgreSQL + agent-browser) |
 | `npm run db:migration:create -- --name <slug>` | Generate a migration from entity changes |
 | `npm run db:migrate` / `npm run db:migrate:down` | Apply / revert migrations |
 | `npm run db:migration:list` / `npm run db:schema:check` | List executed migrations / check for pending schema changes |
@@ -52,11 +55,14 @@ npm run dev                     # http://localhost:3000  (backend: /backend)
 │   ├── app/    @devmentor/app   Next.js application
 │   ├── core/   @devmentor/core  framework-agnostic reusable code
 │   ├── db/     @devmentor/db    data layer (MikroORM)
-│   └── ui/     @devmentor/ui    reusable UI components (shadcn-ui) + theme
+│   ├── ui/     @devmentor/ui    reusable UI components (shadcn-ui) + theme
+│   └── e2e/    @devmentor/e2e   integration tests (testcontainers + agent-browser)
+├── .github/                     CI workflow (lint, typecheck, build, unit, integration)
 ├── .ai/                         specs, run journals and lessons (AI-assisted workflow)
 ├── .env.example                 environment variables (copy to .env.local)
 ├── eslint.config.mjs            one ESLint config for all packages
 ├── tsconfig.base.json           shared TypeScript options
+├── vitest.config.ts             unit tests + 100 % coverage gate (all packages but e2e)
 └── om-sandbox.toml              sandbox service manifest
 ```
 
@@ -157,6 +163,24 @@ Env files live at the repo root. `next.config.ts` and the MikroORM CLI both load
 | `DB_POOL_MIN` | no | `0` | Minimum pooled connections per process |
 | `DB_POOL_MAX` | no | `10` | Maximum pooled connections per process |
 | `DB_DEBUG` | no | `false` | Log SQL queries |
+
+### Testing and CI
+
+- **Unit tests** use Vitest. They live next to the code (`foo.ts` → `foo.test.ts`, React components
+  in `*.test.tsx` under jsdom with Testing Library). Coverage must stay at **100 %**
+  (statements, branches, functions, lines), and every new feature ships with its tests.
+  The HTML report is written to `coverage/index.html`.
+- **Integration tests** (`packages/e2e`) are black-box. Global setup starts a throwaway PostgreSQL
+  with testcontainers (Docker required), migrates it with the MikroORM CLI and starts the
+  production build (`next start`). The tests then drive real Chrome through
+  [agent-browser](https://github.com/vercel-labs/agent-browser) and call the HTTP API.
+  - One-time setup: `npx agent-browser install` (Chrome for Testing).
+  - No Docker? `E2E_DATABASE_URL=postgres://user:pass@host:5432/postgres npm run test:integration`
+    creates and drops a temporary database on that server instead.
+- **CI** (`.github/workflows/ci.yml`) runs on every pull request and push to `main`, with five
+  parallel jobs: lint, typecheck, build, unit (coverage gate, report uploaded as an artifact) and
+  integration. To block merging on red checks, mark the jobs as required in the branch protection
+  rules for `main`.
 
 ### Development workflow
 

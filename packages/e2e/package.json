@@ -1,0 +1,17 @@
+{
+  "name": "@devmentor/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "^12.2.2",
+    "@types/pg": "^8.23.1",
+    "agent-browser": "^0.44.0",
+    "pg": "^8.23.1",
+    "testcontainers": "^12.2.2"
+  }
+}

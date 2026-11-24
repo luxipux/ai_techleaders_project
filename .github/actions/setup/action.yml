@@ -1,0 +1,12 @@
+name: Setup
+description: Check out the repository, set up Node.js with the npm cache, and install dependencies.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v7
+      with:
+        node-version-file: .nvmrc
+        cache: npm
+    - name: Install dependencies
+      shell: bash
+      run: npm ci

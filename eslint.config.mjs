@@ -67,7 +67,20 @@ const eslintConfig = defineConfig([
     },
   },
 
+  {
+    files: ["packages/e2e/**/*.ts"],
+    rules: {
+      "no-restricted-imports": restrict(
+        [
+          "@devmentor/*",
+          "Integration tests are black-box: drive the running app over HTTP / agent-browser, not its packages.",
+        ],
+      ),
+    },
+  },
+
   globalIgnores([
+    "**/coverage/**",
     "**/.next/**",
     "**/out/**",
     "**/build/**",
