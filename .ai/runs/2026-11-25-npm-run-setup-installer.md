@@ -107,3 +107,13 @@ Source doc: .ai/specs/implemented/2026-11-25-npm-run-setup-installer.md
 - Decisions/pitfalls: GitHub refuses an approval from the PR's own author, so the re-review is again a review comment with the verdict in its text (label `merge-queue`, which is routing, not a merge). `automerge.mode` is `prepare-to-merge` and no `automerge` label is set, so nothing merges by itself. Merge order for the maintainer: PR #5 (spec), then PR #6.
 - Verified: CI green on `f2c3a09` (lint, typecheck, unit 100 %, build, integration).
 - Remaining: maintainer merges #5, then #6; closing #4 happens through `Closes #4` on merge.
+
+## 2026-11-25 (review fixes)
+- Covers: applied `om-code-review` findings on PR #5: Q3 now states `.mjs` in `scripts/` is a scoped exception to the TypeScript rule (pre-install bootstrap only); one line says this work introduces the Delta format and `capabilities/`; removed the Node 18 syntax claim from Edge Cases.
+- Decisions/pitfalls: removed the whole Node-18 row, since step 1 of the table already covers an unsupported Node.
+- Remaining: implementation PR, Delta archive.
+
+## 2026-11-25 (merge of the spec PR head)
+- Covers: merged `origin/spec/npm-run-setup-installer` (39f64c8, the review fixes of PR #5) into this branch without rebase. The only conflict was this journal: both sides appended entries at the end; all entries from both sides are kept unchanged, the "review fixes" entry of #5 after the re-review entry.
+- Verified: the archived spec in `specs/implemented/` has the Q3 scoped-exception line and the Delta/`capabilities/` line, and no Node 18 row.
+- Remaining: gate rerun and CI on the merge commit; the maintainer merges #5, then #6.

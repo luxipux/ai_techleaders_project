@@ -29,7 +29,7 @@ alternative.
 |---|---|---|---|---|
 | Q1 | Should setup also start the dev server (README's last step)? | **No.** It ends by printing `npm run dev` as the next command. | A blocking server makes the command non-terminating and therefore not re-runnable or scriptable. Printing the command costs one extra step. | reversible |
 | Q2 | Should setup create the PostgreSQL database when it does not exist? | **No.** A missing or unreachable database fails with an actionable message. | Smallest scope; creating databases needs server privileges and differs per environment. MikroORM's `database:create` command is the canonical primitive if this is added later. | reversible |
-| Q3 | Where does the code live: a root `scripts/` folder or a new workspace package? | **Root `scripts/`**, plain ESM JavaScript (`.mjs`) with JSDoc types, covered by the existing 100 % gate (coverage `include` is widened, never narrowed). | It must run before `npm install`, so it cannot depend on `tsx` or a workspace build. A package would add a manifest and an `exports` contract for one internal script. | reversible |
+| Q3 | Where does the code live: a root `scripts/` folder or a new workspace package? | **Root `scripts/`**, plain ESM JavaScript (`.mjs`) with JSDoc types, covered by the existing 100 % gate (coverage `include` is widened, never narrowed). This is a deliberate, scoped exception to the TypeScript rule in AGENTS.md: `.mjs` in `scripts/` is limited to bootstrap code that must run before `npm install`; other code stays TypeScript. | It must run before `npm install`, so it cannot depend on `tsx` or a workspace build. A package would add a manifest and an `exports` contract for one internal script. | reversible |
 | Q4 | Add an integration test that runs setup twice against a throwaway database? | **No, deferred.** Unit tests cover every branch through injected adapters. A scripted manual check runs setup twice against a throwaway database and records the output in the run journal. | The e2e harness targets the HTTP app (`next start` + agent-browser). Running `npm install` inside it would make the suite slow and network-dependent. The setup flow has no page, route or schema dependency, which are the AGENTS.md triggers for e2e. | reversible |
 | Q5 | `DATABASE_URL` already comes from the shell environment or another env file, and `.env.local` is absent. Should setup still create `.env.local`? | **No.** It reports where `DATABASE_URL` comes from and skips the copy. | Copying `.env.example` would add a second, lower-priority `DATABASE_URL` that can silently shadow `.env` or `.env.production`, because `.env.local` outranks them in `@next/env`. Skipping cannot break a working setup. | reversible |
 
@@ -80,6 +80,8 @@ scope here (Q2), and DevMentor has no app key.
   table and changes with CLI versions, so the exit code of `db:migrate` stays the contract.
 
 ## 📝 Delta
+
+The Delta format and the `.ai/specs/capabilities/` directory are introduced by this work (see Implementation Plan, step 7).
 
 ### Capability: developer-setup
 
@@ -199,7 +201,6 @@ failed (message printed). Messages are for humans, not parsed. It is a new root 
 
 | Situation | Behavior |
 |---|---|
-| Node too old (even very old, e.g. 18) | `scripts/setup.mjs` uses only syntax Node 18 runs, so the version message prints instead of a syntax error |
 | `engines.node` in an unsupported form (not `>=X[.Y[.Z]]`) | Fail with "unsupported engines.node range: …", which is a repo bug and surfaces in tests |
 | `npm install` fails (network, registry) | Exit 1; npm's own output is above; hint to re-run `npm run setup` |
 | `.env.example` missing | Exit 1, naming the file |
