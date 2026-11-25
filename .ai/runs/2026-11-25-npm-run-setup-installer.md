@@ -70,3 +70,8 @@ Source doc: .ai/specs/2026-11-25-npm-run-setup-installer.md
 - Covers: `runSetup(deps)` with the five steps (Node, dependencies, env file, `DATABASE_URL`, migrations); every dependency injected. Tests cover all Delta scenarios (fresh, re-run, lockfile change, edited `.env.local`, value from shell or `.env`) and every failure path, with an `@next/env` emulation (precedence, no override, `NODE_ENV=test`, `forceReload` cache).
 - Decisions/pitfalls: an empty `DATABASE_URL` in the shell counts as defined (as in `@next/env`) and fails with "not set"; unexpected errors print their message and exit 1.
 - Verified: 50 tests, `scripts/lib/setup.mjs` 100 % statements/branches; root `tsc` and ESLint clean.
+
+## 2026-11-25 (1.4 adapters and entry)
+- Covers: `scripts/lib/adapters.mjs` (npm runner via `npm_execpath`, `@next/env` loader, default deps), `main()`, entry `scripts/setup.mjs`, root `"setup": "node scripts/setup.mjs"`; tests on a temp dir with a fake npm script, plus entry and `main` tests with mocked modules.
+- Decisions/pitfalls: Windows fallback (no `npm_execpath`) runs `npm.cmd` as one shell command string, avoiding Node's args-with-shell deprecation; removed a custom silent logger for `@next/env` whose callbacks never ran (untestable), keeping the CLI's default console logger.
+- Verified: 61 scripts tests, scripts coverage 100 % on all four metrics; `tsc`, ESLint clean; real `npm run setup` with an invalid URL exits 1 before migrations, password redacted.

@@ -6,6 +6,8 @@ import { constants } from "node:fs";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 
+import { createDefaultDeps } from "./adapters.mjs";
+
 /** An expected, user-fixable failure: printed without a stack trace. */
 export class SetupError extends Error {}
 
@@ -35,6 +37,11 @@ export class SetupError extends Error {}
  * @property {string} nodeVersion
  * @property {Record<string, string | undefined>} env the process environment
  */
+
+/** Entry point of `npm run setup` with the real dependencies. */
+export function main() {
+  return runSetup(createDefaultDeps());
+}
 
 const ENV_LOCAL = ".env.local";
 const ENV_EXAMPLE = ".env.example";

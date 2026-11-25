@@ -2,8 +2,10 @@ import path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
+import { createDefaultDeps } from "./adapters.mjs";
 import {
   isPostgresUrl,
+  main,
   lockInSync,
   redactUrl,
   runSetup,
@@ -13,6 +15,9 @@ import {
   type SetupDeps,
   type SetupFs,
 } from "./setup.mjs";
+
+// `main` wires the real adapters; replace them so it runs against fakes.
+vi.mock("./adapters.mjs", () => ({ createDefaultDeps: vi.fn() }));
 
 const ROOT = path.join(path.sep, "repo");
 
@@ -433,5 +438,15 @@ describe("runSetup", () => {
       );
       expect(lines.join("\n")).not.toContain("s3cret");
     });
+  });
+});
+
+describe("main", () => {
+  it("runs setup with the default dependencies", async () => {
+    const { deps } = setup(checkout({ ".env.local": EXAMPLE }));
+    vi.mocked(createDefaultDeps).mockReturnValue(deps);
+
+    await expect(main()).resolves.toBe(0);
+    expect(createDefaultDeps).toHaveBeenCalledOnce();
   });
 });
