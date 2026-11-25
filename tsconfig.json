@@ -1,7 +1,11 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    // Root scripts (`scripts/*.mjs`) are plain JavaScript so they run before `npm install`;
+    // type-check them through their JSDoc. Workspace packages keep `allowJs: false`.
+    "allowJs": true,
+    "checkJs": true
   },
-  "include": ["vitest.config.ts", "test"]
+  "include": ["vitest.config.ts", "test", "scripts"]
 }

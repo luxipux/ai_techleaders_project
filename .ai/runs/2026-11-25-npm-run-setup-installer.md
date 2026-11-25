@@ -56,3 +56,7 @@ Source doc: .ai/specs/2026-11-25-npm-run-setup-installer.md
 - Covers: implementation run started (`om-auto-implement-spec` → `om-auto-create-pr`, 7 steps, plain engine); this file's header now carries the execution plan and Progress, as the one-file-per-task journal.
 - Decisions/pitfalls: branch `feat/npm-run-setup-installer` starts from the spec PR head because a journal added by both PRs is a guaranteed add/add merge conflict (reproduced in a scratch repo); the repo merges with merge commits, so either merge order is then clean.
 - Remaining: steps 1.1–1.7.
+
+## 2026-11-25 (1.1 tooling)
+- Covers: root `tsconfig.json` type-checks `scripts/` JavaScript (`allowJs`/`checkJs`, root project only); `vitest.config.ts` runs `scripts/**/*.test.ts` and covers `scripts/**/*.mjs` (gate widened).
+- Verified: `npm run typecheck` ok, `npm run test:coverage` 100 % (unchanged, no scripts yet).
