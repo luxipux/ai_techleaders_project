@@ -257,6 +257,7 @@ This repo uses spec-driven development with AI metadata stored in `.ai/`. Follow
   specs/                     # specifications: YYYY-MM-DD-slug.md
     implemented/             # fully implemented specs
     archive/                 # abandoned / superseded specs
+    capabilities/            # living capability specs (current behavior, from spec Deltas)
   runs/                      # task journals: YYYY-MM-DD-slug.md (one per task)
   lessons.md                 # index of lessons learned (read first)
   lessons/                   # detailed lessons: YYYY-MM-DD-slug.md

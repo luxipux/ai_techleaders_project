@@ -5,13 +5,13 @@ Goals:
 - README documents it, keeping the manual steps as the alternative
 - 100 % unit-test coverage kept; lint, typecheck and build green
 
-Spec: [2026-11-25-npm-run-setup-installer](../specs/2026-11-25-npm-run-setup-installer.md)
+Spec: [2026-11-25-npm-run-setup-installer](../specs/implemented/2026-11-25-npm-run-setup-installer.md)
 Status: in-progress
 
 This file is both the task journal (AGENTS.md: entries below `---`, append-only) and the execution
 plan of the `om-auto-create-pr` run (this header, kept current).
 
-Source doc: .ai/specs/2026-11-25-npm-run-setup-installer.md
+Source doc: .ai/specs/implemented/2026-11-25-npm-run-setup-installer.md
 
 ### Scope
 - `scripts/setup.mjs` (entry), `scripts/lib/setup.mjs` (steps, helpers), `scripts/lib/adapters.mjs`
@@ -79,3 +79,8 @@ Source doc: .ai/specs/2026-11-25-npm-run-setup-installer.md
 ## 2026-11-25 (1.5 docs)
 - Covers: README Getting started leads with `npm run setup` (what it does, re-run safety, the database must exist), keeps the four commands as "Manual setup", adds the command row and `scripts/` to the layout; `AGENTS.md` command row, `scripts/` layout note, coverage-gate scope; `BACKWARD_COMPATIBILITY.md` §5 lists `setup`.
 - Remaining: 1.6 manual verification, 1.7 Delta archive (+ spec move to `implemented/`).
+
+## 2026-11-25 (1.6 verification, 1.7 delta archive)
+- Covers: Delta archived into `.ai/specs/capabilities/developer-setup.md` (4 requirements, 8 scenarios); `capabilities/` documented in `.ai/specs/README.md` and the `AGENTS.md` `.ai/` tree; spec moved to `implemented/` with links updated in this header.
+- Verified (1.6) on a throwaway database `devmentor_setup_*`, dropped afterwards: (a) fresh worktree without `node_modules`/`.env.local` → real `npm install`, `.env.local` copied, migrations applied, exit 0, 9 s; (b) re-run → install and env skipped, `.env.local` byte-identical, exit 0, <1 s; (c) unreachable URL → exit 1, password absent from all output.
+- Remaining: full validation gate, `om-auto-review-pr`.
