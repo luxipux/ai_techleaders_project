@@ -6,7 +6,7 @@ Goals:
 - 100 % unit-test coverage kept; lint, typecheck and build green
 
 Spec: [2026-11-25-npm-run-setup-installer](../specs/implemented/2026-11-25-npm-run-setup-installer.md)
-Status: in-progress
+Status: done
 
 This file is both the task journal (AGENTS.md: entries below `---`, append-only) and the execution
 plan of the `om-auto-create-pr` run (this header, kept current).
@@ -101,3 +101,9 @@ Source doc: .ai/specs/implemented/2026-11-25-npm-run-setup-installer.md
 - Decisions/pitfalls: tests written first and seen red (8 failing), then green. The stricter guard broke the tests' fake npm, named `fake-npm.cjs`; it is now `npm-cli.cjs` like the real file. GitHub refuses "request changes" on one's own PR (same account), so the review was posted as a review comment with the verdict in its text and the `changes-requested` label.
 - Verified: 154 tests under unset, `development` and `test` NODE_ENV; `env -u NODE_ENV npm run test:coverage` 100 % (263/133/73/236); lint, typecheck, build pass; real `npm run setup` with `?password=…` in an unreachable URL: exit 1, the password appears 0 times, and the real `npm_execpath` (`…/npm/bin/npm-cli.js`) passes the new guard.
 - Remaining: green CI on this commit, re-review, draft → ready, release locks.
+
+## 2026-11-25 (re-review, ready)
+- Covers: re-review of `f2c3a09` after the fixes: both findings resolved (query-string password redacted, non-npm managers ignored), no new findings; verdict approve. Header status set to `done`: all plan steps are complete and CI is green; the merge itself is the maintainer's.
+- Decisions/pitfalls: GitHub refuses an approval from the PR's own author, so the re-review is again a review comment with the verdict in its text (label `merge-queue`, which is routing, not a merge). `automerge.mode` is `prepare-to-merge` and no `automerge` label is set, so nothing merges by itself. Merge order for the maintainer: PR #5 (spec), then PR #6.
+- Verified: CI green on `f2c3a09` (lint, typecheck, unit 100 %, build, integration).
+- Remaining: maintainer merges #5, then #6; closing #4 happens through `Closes #4` on merge.
