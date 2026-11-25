@@ -8,17 +8,22 @@ import { fileURLToPath } from "node:url";
 /** Repository root (this file lives in `scripts/lib/`). */
 export const repoRoot = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
 
+/** `npm_execpath` of npm itself (not pnpm, yarn or npx): `.../npm/bin/npm-cli.js`. */
+const NPM_CLI = /(^|[\\/])npm-cli\.[cm]?js$/;
+
 /**
  * How to run npm. Prefer the npm CLI that started `npm run setup` (`npm_execpath`): it is run by
- * this Node.js binary, so no shell is needed on any platform. Otherwise use `npm` from PATH; on
- * Windows that is `npm.cmd`, which Node.js only spawns through a shell.
+ * this Node.js binary, so no shell is needed on any platform. Another package manager that runs the
+ * script (`pnpm run setup`, `yarn setup`) is ignored, because the repository is npm only and must
+ * not get a foreign lockfile. Otherwise use `npm` from PATH; on Windows that is `npm.cmd`, which
+ * Node.js only spawns through a shell.
  * @param {string[]} args fixed, internal arguments (never user input)
  * @param {Record<string, string | undefined>} env
  * @param {string} platform
  * @returns {{ command: string, args: string[], shell: boolean }}
  */
 export function npmCommand(args, env, platform) {
-  if (env.npm_execpath) return { command: process.execPath, args: [env.npm_execpath, ...args], shell: false };
+  if (env.npm_execpath && NPM_CLI.test(env.npm_execpath)) return { command: process.execPath, args: [env.npm_execpath, ...args], shell: false };
   if (platform === "win32") return { command: ["npm.cmd", ...args].join(" "), args: [], shell: true };
   return { command: "npm", args, shell: false };
 }

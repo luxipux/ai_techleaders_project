@@ -1,7 +1,6 @@
 // `npm run setup`: steps and helpers. Spec: .ai/specs/2026-11-25-npm-run-setup-installer.md
 //
-// Runs before `npm install`, so this module imports Node.js built-ins only and keeps to syntax
-// that old Node.js versions parse; that way the version check below can report a clear error.
+// Runs before `npm install`, so this module imports Node.js built-ins only.
 import { constants } from "node:fs";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
@@ -196,8 +195,10 @@ export function satisfiesEngine(range, version) {
 }
 
 /**
- * A connection string safe to print: the password is replaced with `***`. Invalid input is never
- * echoed, because it may still contain a secret.
+ * A connection string safe to print: the password is replaced with `***`, both in the userinfo
+ * (`user:password@`) and in query parameters whose name contains "pass" (`?password=`,
+ * `?sslpassword=`), which `pg` also accepts. Invalid input is never echoed, because it may still
+ * contain a secret.
  * @param {string} value
  * @returns {string}
  */
@@ -205,6 +206,9 @@ export function redactUrl(value) {
   try {
     const url = new URL(value);
     if (url.password) url.password = "***";
+    for (const name of new Set(url.searchParams.keys())) {
+      if (/pass/i.test(name)) url.searchParams.set(name, "***");
+    }
     return url.toString();
   } catch {
     return "<invalid URL>";

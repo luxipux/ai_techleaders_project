@@ -104,6 +104,24 @@ describe("redactUrl", () => {
     expect(redactUrl("postgres://app@db:5432/devmentor")).toBe("postgres://app@db:5432/devmentor");
   });
 
+  it.each([
+    ["password", "postgres://u@h:5432/db?password=s3cret&sslmode=require", "postgres://u@h:5432/db?password=***&sslmode=require"],
+    ["sslpassword", "postgres://u@h:5432/db?sslpassword=s3cret", "postgres://u@h:5432/db?sslpassword=***"],
+    ["a mixed-case name", "postgres://u@h:5432/db?PassWord=s3cret", "postgres://u@h:5432/db?PassWord=***"],
+    ["a repeated parameter", "postgres://u@h/db?password=a&password=b", "postgres://u@h/db?password=***"],
+    ["both forms", "postgres://u:one@h/db?password=two", "postgres://u:***@h/db?password=***"],
+  ])("masks a password in the query string (%s)", (_label, input, expected) => {
+    const output = redactUrl(input);
+    expect(output).toBe(expected);
+    expect(output).not.toMatch(/s3cret|one|two/);
+  });
+
+  it("keeps harmless query parameters", () => {
+    expect(redactUrl("postgres://u@h/db?sslmode=require&application_name=devmentor")).toBe(
+      "postgres://u@h/db?sslmode=require&application_name=devmentor",
+    );
+  });
+
   it("never echoes an unparseable value", () => {
     expect(redactUrl("not a url with s3cret")).toBe("<invalid URL>");
   });

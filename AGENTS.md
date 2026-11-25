@@ -184,8 +184,7 @@ app ──▶ ui
   change as the code, never "later".
 - The gate covers `packages/{core,db,app,ui}/src/**` and `scripts/**/*.mjs`, plus
   `packages/db/mikro-orm.config.ts` and `packages/app/next.config.ts`. Files that no test imports
-  count as 0 %, so new files can't slip
-  through. Do not narrow `coverage.include`, lower `thresholds`, or add `/* v8 ignore */`
+  count as 0 %, so new files can't slip through. Do not narrow `coverage.include`, lower `thresholds`, or add `/* v8 ignore */`
   comments. If code truly cannot be unit-tested, raise it in the spec and get the user's
   approval first.
 - Cover behaviour, not just lines: every branch (success, failure, empty and edge inputs) gets an

@@ -7,12 +7,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDefaultDeps, loadEnvFiles, npmCommand, repoRoot, runNpm } from "./adapters.mjs";
 
 let dir: string;
-/** A stand-in for the npm CLI: exits with the code in its first argument (or kills itself). */
+/** A stand-in for the npm CLI (named like it, so `npmCommand` accepts it): exits with the code in its first argument (or kills itself). */
 let fakeNpm: string;
 
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "devmentor-setup-"));
-  fakeNpm = path.join(dir, "fake-npm.cjs");
+  fakeNpm = path.join(dir, "npm-cli.cjs");
   fs.writeFileSync(
     fakeNpm,
     'if (process.argv[2] === "kill") process.kill(process.pid, "SIGKILL"); else process.exit(Number(process.argv[2]));\n',
@@ -28,6 +28,23 @@ describe("npmCommand", () => {
     expect(npmCommand(["install"], { npm_execpath: "/npm/bin/npm-cli.js" }, "linux")).toEqual({
       command: process.execPath,
       args: ["/npm/bin/npm-cli.js", "install"],
+      shell: false,
+    });
+  });
+
+  it.each([
+    ["pnpm", "/usr/lib/node_modules/pnpm/bin/pnpm.cjs"],
+    ["yarn", "/opt/yarn/bin/yarn.js"],
+    ["npx", "/usr/lib/node_modules/npm/bin/npx-cli.js"],
+  ])("ignores a non-npm package manager (%s) so no foreign lockfile is created", (_name, execpath) => {
+    expect(npmCommand(["install"], { npm_execpath: execpath }, "linux")).toEqual({ command: "npm", args: ["install"], shell: false });
+  });
+
+  it("recognizes npm's CLI by its file name on Windows paths too", () => {
+    const execpath = "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js";
+    expect(npmCommand(["install"], { npm_execpath: execpath }, "win32")).toEqual({
+      command: process.execPath,
+      args: [execpath, "install"],
       shell: false,
     });
   });
