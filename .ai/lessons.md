@@ -25,3 +25,4 @@ Don't duplicate: if a lesson already exists, update it instead.
 - [2026-11-24-mikro-orm-snapshot-name](lessons/2026-11-24-mikro-orm-snapshot-name.md) — pin `snapshotName`; default embeds the DB name and differs per developer
 - [2026-11-24-shadcn-cn-package](lessons/2026-11-24-shadcn-cn-package.md) — shadcn components import `cn` from shadcn's `cn` package; keep it, re-export via `@devmentor/ui/lib/utils`
 - [2026-11-24-next-title-template-scope](lessons/2026-11-24-next-title-template-scope.md) — a layout's `title.template` skips the page in its own segment; use `title.absolute` there
+- [2026-11-25-skills-untracked-on-main](lessons/2026-11-25-skills-untracked-on-main.md) — skills now live on main (`.claude/skills/*` symlinks to `.agents/skills/*`, ESLint-ignored); never restore them by copying
