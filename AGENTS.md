@@ -20,6 +20,7 @@ Commands (run from the repo root):
 
 | Command | What it does |
 | --- | --- |
+| `npm run setup` | One-command, idempotent setup (`scripts/setup.mjs`): install, `.env.local`, migrations |
 | `npm install` | Install all workspaces (npm only — no pnpm/yarn/bun lockfiles) |
 | `npm run dev` | Next.js dev server (`@devmentor/app`) |
 | `npm run build` / `npm start` | Production build / server (forces `NODE_ENV=production`) |
@@ -61,7 +62,12 @@ packages/
   db/    @devmentor/db    Data layer: MikroORM config & lifecycle, entities, migrations, db helpers
   ui/    @devmentor/ui    Reusable UI: shadcn-ui primitives, shared components, theme CSS, `cn`
   e2e/   @devmentor/e2e   Integration tests: ephemeral PostgreSQL + `next start` + agent-browser
+scripts/                  Repo scripts that must run before `npm install` (`npm run setup`)
 ```
+
+`scripts/` holds plain ESM JavaScript (`.mjs`). It uses only Node.js built-ins until dependencies
+are installed. It is type-checked through JSDoc by the root `tsconfig.json` and covered by the unit
+gate.
 
 Packages ship TypeScript **source** (no build step) through `package.json#exports`; Next/Turbopack
 transpiles them. To use a package, add it to the consumer's `dependencies` and import a public
@@ -176,9 +182,9 @@ app ──▶ ui
   statements, branches, functions and lines. Coverage below 100 % fails `npm run test:coverage`
   and the `unit` CI job, so the pull request cannot be merged. Write the tests in the same
   change as the code, never "later".
-- The gate covers `packages/{core,db,app,ui}/src/**` plus `packages/db/mikro-orm.config.ts` and
-  `packages/app/next.config.ts`. Files that no test imports count as 0 %, so new files can't slip
-  through. Do not narrow `coverage.include`, lower `thresholds`, or add `/* v8 ignore */`
+- The gate covers `packages/{core,db,app,ui}/src/**` and `scripts/**/*.mjs`, plus
+  `packages/db/mikro-orm.config.ts` and `packages/app/next.config.ts`. Files that no test imports
+  count as 0 %, so new files can't slip through. Do not narrow `coverage.include`, lower `thresholds`, or add `/* v8 ignore */`
   comments. If code truly cannot be unit-tested, raise it in the spec and get the user's
   approval first.
 - Cover behaviour, not just lines: every branch (success, failure, empty and edge inputs) gets an
@@ -250,6 +256,7 @@ This repo uses spec-driven development with AI metadata stored in `.ai/`. Follow
   specs/                     # specifications: YYYY-MM-DD-slug.md
     implemented/             # fully implemented specs
     archive/                 # abandoned / superseded specs
+    capabilities/            # living capability specs (current behavior, from spec Deltas)
   runs/                      # task journals: YYYY-MM-DD-slug.md (one per task)
   lessons.md                 # index of lessons learned (read first)
   lessons/                   # detailed lessons: YYYY-MM-DD-slug.md

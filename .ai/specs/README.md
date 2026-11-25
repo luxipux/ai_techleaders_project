@@ -13,6 +13,7 @@ Specifications are written **before** implementation. Code follows the spec; if 
   YYYY-MM-DD-slug.md     # active specs (draft / in implementation)
   implemented/           # fully implemented specs (moved here, filename unchanged)
   archive/               # abandoned or superseded specs (moved here, filename unchanged)
+  capabilities/          # living capability specs: current behavior, one file per area (<slug>.md)
 ```
 
 1. Create the spec in `.ai/specs/`.
@@ -21,6 +22,14 @@ Specifications are written **before** implementation. Code follows the spec; if 
 4. If dropped or superseded, move it to `archive/` and note why at the top of the file.
 
 When moving a spec, update links to it (e.g. in run journals).
+
+## Capability specs
+
+A spec that changes observable behavior carries a `## 📝 Delta` (ADDED / MODIFIED / REMOVED
+requirements with `WHEN`/`THEN` scenarios). The implementation PR applies it to
+`capabilities/<slug>.md`, so those files describe what the system does **now**, while the dated
+specs stay the history of each change. Each requirement ends with `Source:` linking the spec that
+last changed it.
 
 ## Suggested structure
 

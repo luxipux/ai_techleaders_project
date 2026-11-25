@@ -8,7 +8,29 @@ dependency injection, **Tailwind CSS** for frontend pages and **shadcn-ui** for 
 
 ## Getting started
 
-Requirements: Node.js ≥ 22, npm, PostgreSQL.
+Requirements: Node.js ≥ 22, npm, and a running PostgreSQL server where the database named in
+`DATABASE_URL` exists (`devmentor` in `.env.example`).
+
+```bash
+npm run setup                   # install, create .env.local, apply migrations
+npm run dev                     # http://localhost:3000  (backend: /backend)
+```
+
+`npm run setup` runs these steps:
+
+1. Checks the Node.js version.
+2. Installs dependencies.
+3. Creates `.env.local` from `.env.example`. It does this only when `.env.local` is missing and no
+   other source sets `DATABASE_URL`.
+4. Applies pending migrations.
+
+It skips every step that is already done, so it is safe to re-run, for example after a `git pull`.
+It never overwrites `.env.local` and never prints the database password. If a step fails, it says
+what to fix, for example `DATABASE_URL` in `.env.local`. Fix it and run the command again.
+
+### Manual setup
+
+The same steps by hand:
 
 ```bash
 npm install
@@ -19,6 +41,7 @@ npm run dev                     # http://localhost:3000  (backend: /backend)
 
 | Command | Description |
 | --- | --- |
+| `npm run setup` | One-command setup: dependencies, `.env.local`, migrations; skips completed steps |
 | `npm run dev` | Start the Next.js dev server |
 | `npm run build` / `npm start` | Production build / server |
 | `npm run lint` | Lint the whole monorepo (incl. architecture boundaries) |
@@ -57,6 +80,7 @@ npm run dev                     # http://localhost:3000  (backend: /backend)
 │   ├── db/     @devmentor/db    data layer (MikroORM)
 │   ├── ui/     @devmentor/ui    reusable UI components (shadcn-ui) + theme
 │   └── e2e/    @devmentor/e2e   integration tests (testcontainers + agent-browser)
+├── scripts/                     repo scripts that run before `npm install` (`npm run setup`)
 ├── .github/                     CI workflow (lint, typecheck, build, unit, integration)
 ├── .ai/                         specs, run journals and lessons (AI-assisted workflow)
 ├── .env.example                 environment variables (copy to .env.local)

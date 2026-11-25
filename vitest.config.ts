@@ -24,7 +24,7 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "node",
-          include: [`${UNIT_PACKAGES}/**/*.test.ts`],
+          include: [`${UNIT_PACKAGES}/**/*.test.ts`, "scripts/**/*.test.ts"],
         },
       },
       {
@@ -43,6 +43,8 @@ export default defineConfig({
         `${UNIT_PACKAGES}/src/**/*.{ts,tsx}`,
         "packages/db/mikro-orm.config.ts",
         "packages/app/next.config.ts",
+        // Root scripts (e.g. `npm run setup`), plain ESM JavaScript.
+        "scripts/**/*.mjs",
       ],
       exclude: ["**/*.test.{ts,tsx}", "**/*.d.ts", "packages/db/src/migrations/**"],
       reporter: ["text", "html", "lcov", "json-summary"],
