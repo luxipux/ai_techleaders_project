@@ -37,13 +37,13 @@ Source doc: .ai/specs/implemented/2026-11-25-npm-run-setup-installer.md
 
 ### Phase 1: `npm run setup`
 
-- [ ] 1.1 Tooling for root scripts
-- [ ] 1.2 Pure helpers
-- [ ] 1.3 Steps and orchestrator
-- [ ] 1.4 Adapters and entry
-- [ ] 1.5 Docs
-- [ ] 1.6 Manual verification
-- [ ] 1.7 Archive the Delta
+- [x] 1.1 Tooling for root scripts — f73102e
+- [x] 1.2 Pure helpers — 759edd4
+- [x] 1.3 Steps and orchestrator — c7da5b1
+- [x] 1.4 Adapters and entry — bca29bc
+- [x] 1.5 Docs — 1fcf7b8
+- [x] 1.6 Manual verification — 907d890
+- [x] 1.7 Archive the Delta — 907d890
 
 ---
 
@@ -84,3 +84,8 @@ Source doc: .ai/specs/implemented/2026-11-25-npm-run-setup-installer.md
 - Covers: Delta archived into `.ai/specs/capabilities/developer-setup.md` (4 requirements, 8 scenarios); `capabilities/` documented in `.ai/specs/README.md` and the `AGENTS.md` `.ai/` tree; spec moved to `implemented/` with links updated in this header.
 - Verified (1.6) on a throwaway database `devmentor_setup_*`, dropped afterwards: (a) fresh worktree without `node_modules`/`.env.local` → real `npm install`, `.env.local` copied, migrations applied, exit 0, 9 s; (b) re-run → install and env skipped, `.env.local` byte-identical, exit 0, <1 s; (c) unreachable URL → exit 1, password absent from all output.
 - Remaining: full validation gate, `om-auto-review-pr`.
+
+## 2026-11-25 (progress, validation gate)
+- Covers: Progress for steps 1.1–1.7 marked done with their commit SHAs.
+- Verified: full gate in the worktree: `npm run lint` ok, `npm run typecheck` ok, `npm run test:coverage` 100 % (259 statements / 129 branches / 73 functions / 233 lines, 29 files), `npm run build` ok. `test:integration` not run: no UI, route, API or schema change (AGENTS.md trigger); CI runs it.
+- Remaining: `om-auto-review-pr` pass, summary comment, ready flip.
