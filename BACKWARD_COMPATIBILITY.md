@@ -67,7 +67,7 @@ and in the PR body.
 
 ### 5. npm scripts and CLI commands
 
-Root scripts: `dev`, `build`, `start`, `lint`, `typecheck`, `test`, `test:watch`, `test:coverage`,
+Root scripts: `setup`, `dev`, `build`, `start`, `lint`, `typecheck`, `test`, `test:watch`, `test:coverage`,
 `test:integration`, `db:migration:create`, `db:migrate`, `db:migrate:down`, `db:migration:list`, `db:schema:check`.
 
 **Breaking:** removing or renaming a script that CI (`.github/workflows/ci.yml`), the validation gate in

@@ -75,3 +75,7 @@ Source doc: .ai/specs/2026-11-25-npm-run-setup-installer.md
 - Covers: `scripts/lib/adapters.mjs` (npm runner via `npm_execpath`, `@next/env` loader, default deps), `main()`, entry `scripts/setup.mjs`, root `"setup": "node scripts/setup.mjs"`; tests on a temp dir with a fake npm script, plus entry and `main` tests with mocked modules.
 - Decisions/pitfalls: Windows fallback (no `npm_execpath`) runs `npm.cmd` as one shell command string, avoiding Node's args-with-shell deprecation; removed a custom silent logger for `@next/env` whose callbacks never ran (untestable), keeping the CLI's default console logger.
 - Verified: 61 scripts tests, scripts coverage 100 % on all four metrics; `tsc`, ESLint clean; real `npm run setup` with an invalid URL exits 1 before migrations, password redacted.
+
+## 2026-11-25 (1.5 docs)
+- Covers: README Getting started leads with `npm run setup` (what it does, re-run safety, the database must exist), keeps the four commands as "Manual setup", adds the command row and `scripts/` to the layout; `AGENTS.md` command row, `scripts/` layout note, coverage-gate scope; `BACKWARD_COMPATIBILITY.md` §5 lists `setup`.
+- Remaining: 1.6 manual verification, 1.7 Delta archive (+ spec move to `implemented/`).
