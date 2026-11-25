@@ -60,3 +60,8 @@ Source doc: .ai/specs/2026-11-25-npm-run-setup-installer.md
 ## 2026-11-25 (1.1 tooling)
 - Covers: root `tsconfig.json` type-checks `scripts/` JavaScript (`allowJs`/`checkJs`, root project only); `vitest.config.ts` runs `scripts/**/*.test.ts` and covers `scripts/**/*.mjs` (gate widened).
 - Verified: `npm run typecheck` ok, `npm run test:coverage` 100 % (unchanged, no scripts yet).
+
+## 2026-11-25 (1.2 helpers)
+- Covers: `scripts/lib/setup.mjs` helpers `satisfiesEngine`, `redactUrl`, `isPostgresUrl`, `lockInSync` (hidden lockfile vs `package-lock.json` vs manifests, by content), with an in-memory fs in `setup.test.ts` (31 tests).
+- Decisions/pitfalls: unsupported `engines.node` forms and workspace globs fail closed (throw / "not in sync"); invalid URLs are never echoed. A dead `?? 0` fallback was removed to keep branch coverage real rather than ignored.
+- Verified: scripts tests 100 % statements/branches/functions/lines; root `tsc` and ESLint clean.
