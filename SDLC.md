@@ -105,6 +105,8 @@ CI in ordinary queue preparation. The buddy revalidates the evidence:
 
   On its first visit to a PR, when no signal is recorded yet, the buddy derives the initial signals from the PR's real state: its labels, reviews and comments, and its CI checks on the current head. It then starts from the first signal still missing, so review, QA or CI work already done is not repeated. A missing signal is produced by `om-auto-review-pr --autofix`, `om-auto-qa-pr`, or `om-auto-fix-pr`, each run with `--orchestrated` so the buddy alone owns the claim and the labels. CI that is still running is parked under `ci-monitoring` and checked again later. A PR that cannot be fixed within the attempt limit is parked under `automerge-blocked`; remove that label to retry. A fork PR is carried forward to a credited replacement that keeps the label. In `prepare-to-merge` mode, a PR with all three signals gets `merge-queue`. In `prepare-and-merge` mode (the missing-config default) it is squash-merged, bypassing other labels and host merge rules, because the three signals are the gate. Removing `automerge` stops the automation.
 
+**This repository sets `automerge.mode` to `prepare-to-merge`: automation only prepares a PR (signals, `merge-queue`), and the maintainer always merges by hand.** The defaults below describe the skills' behavior when the key is absent.
+
 Mode and independent review come from `.ai/agentic.config.json`:
 `automerge.mode` defaults to `prepare-and-merge`, and
 `automerge.requireIndependentReview` defaults to `false`. Explicit `--mode`,
