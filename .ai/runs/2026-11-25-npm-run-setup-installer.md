@@ -89,3 +89,9 @@ Source doc: .ai/specs/implemented/2026-11-25-npm-run-setup-installer.md
 - Covers: Progress for steps 1.1–1.7 marked done with their commit SHAs.
 - Verified: full gate in the worktree: `npm run lint` ok, `npm run typecheck` ok, `npm run test:coverage` 100 % (259 statements / 129 branches / 73 functions / 233 lines, 29 files), `npm run build` ok. `test:integration` not run: no UI, route, API or schema change (AGENTS.md trigger); CI runs it.
 - Remaining: `om-auto-review-pr` pass, summary comment, ready flip.
+
+## 2026-11-25 (CI fix: NODE_ENV in the loadEnvFiles test)
+- Covers: the `Unit tests` CI job was red on `c0543ff` (1 of 144 tests). `loadEnvFiles` test now pins `NODE_ENV=development` with `vi.stubEnv`; lesson `2026-11-25-ci-tests-run-with-node-env-test` added.
+- Decisions/pitfalls: cause confirmed by reproduction: `env -u NODE_ENV` fails (same assertion as the CI log), `NODE_ENV=development` passes. The earlier entries' "gate green" was true only for the sandbox's `NODE_ENV=development`; it did not cover CI's environment. The test was wrong, `npm run setup` itself is unaffected (it runs without `NODE_ENV=test`). With `NODE_ENV=production` 22 `unit-dom` tests fail on `main` as well; unrelated, left alone.
+- Verified: 144/144 under unset, `development` and `test`; `env -u NODE_ENV npm run test:coverage` 100 % (259/129/73/233); ESLint and `tsc` clean.
+- Remaining: green CI on the new commit, formal review, draft → ready, release locks.

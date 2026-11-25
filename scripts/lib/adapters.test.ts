@@ -63,6 +63,9 @@ describe("runNpm", () => {
 
 describe("loadEnvFiles", () => {
   it("loads env files like the MikroORM CLI, reporting files in precedence order and caching until forceReload", async () => {
+    // Vitest sets NODE_ENV=test when it is unset (CI), and `@next/env` skips `.env.local` in test
+    // mode; the sandbox exports `development`. Pin the value `npm run setup` really runs under.
+    vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("DEVMENTOR_SETUP_A", undefined);
     vi.stubEnv("DEVMENTOR_SETUP_B", undefined);
     fs.writeFileSync(path.join(dir, ".env.local"), "DEVMENTOR_SETUP_A=from-local\n");
