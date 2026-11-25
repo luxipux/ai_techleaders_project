@@ -65,3 +65,8 @@ Source doc: .ai/specs/2026-11-25-npm-run-setup-installer.md
 - Covers: `scripts/lib/setup.mjs` helpers `satisfiesEngine`, `redactUrl`, `isPostgresUrl`, `lockInSync` (hidden lockfile vs `package-lock.json` vs manifests, by content), with an in-memory fs in `setup.test.ts` (31 tests).
 - Decisions/pitfalls: unsupported `engines.node` forms and workspace globs fail closed (throw / "not in sync"); invalid URLs are never echoed. A dead `?? 0` fallback was removed to keep branch coverage real rather than ignored.
 - Verified: scripts tests 100 % statements/branches/functions/lines; root `tsc` and ESLint clean.
+
+## 2026-11-25 (1.3 steps and orchestrator)
+- Covers: `runSetup(deps)` with the five steps (Node, dependencies, env file, `DATABASE_URL`, migrations); every dependency injected. Tests cover all Delta scenarios (fresh, re-run, lockfile change, edited `.env.local`, value from shell or `.env`) and every failure path, with an `@next/env` emulation (precedence, no override, `NODE_ENV=test`, `forceReload` cache).
+- Decisions/pitfalls: an empty `DATABASE_URL` in the shell counts as defined (as in `@next/env`) and fails with "not set"; unexpected errors print their message and exit 1.
+- Verified: 50 tests, `scripts/lib/setup.mjs` 100 % statements/branches; root `tsc` and ESLint clean.
