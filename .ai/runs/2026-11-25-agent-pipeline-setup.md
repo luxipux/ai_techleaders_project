@@ -21,3 +21,9 @@ Status: done
 - Decisions/pitfalls: the first entry said the validation gate was not run; it is the definition of done in AGENTS.md, so it was run. Claims in BACKWARD_COMPATIBILITY.md and CODE_REVIEW.md were checked against code (pool defaults 0/10, health 200/503, empty migrations dir, `getRequestContainer`, `AppError`); no mismatch.
 - Verified: `npx eslint . --ignore-pattern '.agents/**' --ignore-pattern '.claude/**'` clean; `npm run typecheck` ok; `npm run test:coverage` 100 % (106/47/44/99); `npm run build` ok. Plain `npm run lint` fails only because of the untracked restored skills (parse error in om-ux-design assets), not because of PR content.
 - Remaining: maintainer decision on tracking the skills on `main` (needs an ESLint ignore first); human read-through of the generated docs; merge by the maintainer.
+
+## 2026-11-25 (skills now on main, tree cleaned)
+- Covers: merged `origin/main` (om-* skills as `.claude/skills/* -> ../../.agents/skills/*` symlinks, ESLint ignore) into this branch; removed the 148 untracked hand-copied skill paths; rewrote the lesson `2026-11-25-skills-untracked-on-main` (same file name, so the earlier journal reference still resolves) because its "skills are not on main" text became false.
+- Decisions/pitfalls: merge, not rebase, since the branch was already pushed. Skills are edited only under `.agents/skills/`; `.claude/skills/*` must stay symlinks. The PR description's Open items and Validation text were updated to match.
+- Verified: working tree clean after the merge, 75 symlinks and none broken, plain `npm run lint` passes.
+- Remaining: maintainer reviews and merges PR #3.
