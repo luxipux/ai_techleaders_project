@@ -1004,7 +1004,7 @@ rows and audit events according to the Retention section, with no per-record PII
 - **Decision 1 (approved 2026-11-27): #14 AC2 moves to #20 (E03-S02).** #20 gains the AC "Given a
   mentor, when they open another mentor's booking, then the response is 404 (moved from #14 AC2)".
   When this spec ships, #14 closes with AC1 and AC3 verified end to end, and AC2 is recorded as
-  moved, not done. The tracker edits are drafted and posted only after review.
+  moved, not done. The #20 AC is posted; the #14 closing note is posted when implementation lands.
 - **New dependencies:** `arctic`, `@node-rs/argon2` (native, prebuilt binaries for linux/macos/win),
   `zod`, `tsx` (runtime dependency of app, for the CLI), and `@next/env` moved to runtime
   dependencies for CLI env loading. None replaces a fixed stack choice.
@@ -1222,10 +1222,12 @@ docs and capability Deltas match tested behavior; source-decision follow-ups are
 
 Owed before a public launch. Only the deployment decision (Phase 4's production gate) blocks an
 implementation phase; the rest block launch only.
-- **Account deletion / GDPR erasure.** E01 stores personal data (email, name, IP-keyed throttle
+- **Account deletion / GDPR erasure** ([#32](https://github.com/luxipux/ai_techleaders_project/issues/32)). E01 stores personal data (email, name, IP-keyed throttle
   rows, user ids in audit) and offers no deletion path. Schema cascades already support one; the
-  follow-up must also decide what happens to `role.*` audit events kept forever. Tracker issue
-  drafted with the tracker notes below; posted only after approval.
-- **Tracker drafts, posted only after approval:** the #20 AC (moved from #14 AC2), the #14 closing
-  note, the GDPR issue above, and an issue asking for the original `D07-login.md` (PR #31 is merged).
+  follow-up must also decide what happens to `role.*` audit events kept forever.
+- **Missing `decisions/D07-login.md`** ([#33](https://github.com/luxipux/ai_techleaders_project/issues/33)):
+  add the original record cited by the brief (and the other missing D03–D29 files), or stop
+  citing it. D30 quotes R06/D07 until then.
+- **Tracker:** the #20 AC (moved from #14 AC2) is posted; the #14 closing note is posted when the
+  implementation lands.
 - **Deployment target decision** before Phase 4's production gate.

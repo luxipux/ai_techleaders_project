@@ -51,3 +51,8 @@ Status: in-progress
 - Covers: fifth `om-pre-implement-spec` run on `af7486f` returned **go** (no Critical or Important finding); committed the report `.ai/analysis/pre-implement-2026-11-27-accounts-and-access.md`, which replaces the earlier uncommitted drafts.
 - Decisions/pitfalls: two nice-to-haves remain: dynamic import of `auth-config` in `instrumentation.ts` (Phase 2 step 5) and aligning the brief's founder-A owner columns if the product owner wants them to name approvers.
 - Remaining: merge PR #30 (closes this journal); tracker drafts (#20 AC, #14 note, GDPR issue, `D07-login.md` request issue) await approval; implementation not started.
+
+## 2026-11-27 — follow-up issues linked
+- Covers: posted #32 (account deletion / GDPR erasure, launch-blocking) and #33 (missing `decisions/D07-login.md` and other D03–D29 records); the spec's Follow-ups and Risks now link them instead of calling them drafts.
+- Decisions/pitfalls: the #20 AC was already posted earlier, so it was skipped; the #14 closing note waits until implementation lands; the brief's owner columns stay unchanged (product owner's call).
+- Remaining: merge PR #30 (closes this journal); post the #14 closing note after implementation.
