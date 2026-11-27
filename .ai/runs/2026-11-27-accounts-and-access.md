@@ -31,3 +31,8 @@ Status: in-progress
 - Covers: rerun pre-implement audit on `7a1ab68` returned no-go only for status and the unsigned D30 (no design Critical). Folded its gaps into the spec: phase-scoped readiness (Phase 1 after approval, Phases 2–5 after D30), fail-open `CurrentActor.getForDisplay()` for the header so public pages survive DB outage, startup config validation in `instrumentation.ts` `register()`, BC-doc updates per phase PR, root `user:role`/`auth:cleanup` scripts, sandbox `APP_URL` docs, PR-body notes for Cradle/entity changes.
 - Decisions/pitfalls: Next 16.4.6 calls `register()` once per server start and awaits it before serving; `next build` does not, so builds stay secret-free. The audit report stays uncommitted until a go/conditional verdict.
 - Remaining: reviewer approved the design (status → approved in this commit); rerun the audit, D30 after #31 merges, tracker drafts await approval.
+
+## 2026-11-27 — D30 decision record after PR #31 merged
+- Covers: rebased onto `main` with PR #31 (discovery) merged; added `.ai/specs/research/decisions/D30-login-password-mentees-only.md` (status proposed) in the N01/N02 record format, a D30 `proposal` row in the brief's Decisions table, and "partially superseded by D30 (pending founder A)" on the R06 and D07 rows; spec header and Follow-ups now point at the record.
+- Decisions/pitfalls: D30 quotes R06/D07 verbatim because `decisions/D07-login.md` is still absent after #31; only the password-fallback part is superseded, GitHub for every role stays. The rebase rewrites the PR #30 commits, so the push is a force-push.
+- Remaining: founder A sets D30 `active` (gates Phase 2); tracker drafts (#20 AC, #14 note, GDPR issue, D07-login.md request) await approval; PR #30 merge closes this journal.

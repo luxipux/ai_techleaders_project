@@ -2,8 +2,8 @@
 
 Status: approved (2026-11-27, design review of PR #30; third revision plus pre-implement audit gaps)
 PR: #30 · branch: `spec/accounts-and-access` · design-only; merges after PR #31 (discovery)
-Decision record (owed): `D30-login-password-mentees-only` partially supersedes R06/D07; proposed,
-pending founder A (Oliwia). Phase 2 starts only once D30 is `active` (see Decisions in play).
+Decision record: `.ai/specs/research/decisions/D30-login-password-mentees-only.md` partially
+supersedes R06/D07; proposed, pending founder A (Oliwia). Phase 2 starts only once D30 is `active` (see Decisions in play).
 Readiness is phase-scoped: once this spec is approved, Phase 1 may be implemented (it encodes no
 R06/D07 rule); Phases 2–5 stay blocked until D30 is `active`.
 Issues: #8 (E01), #13 (E01-S01), #14 (E01-S02)
@@ -1019,7 +1019,7 @@ rows and audit events according to the Retention section, with no per-record PII
 - D07 / R06: **partial supersession, recorded as D30 (proposed, pending founder A).** The brief's
   only change path for R06/D07 is "a superseding record by founder A (Oliwia)", and founder A is a
   separate person from the reviewer who accepted this design. D30
-  (`.ai/specs/research/decisions/D30-login-password-mentees-only.md`, added after PR #31 merges)
+  (`.ai/specs/research/decisions/D30-login-password-mentees-only.md`, added once PR #31 merged)
   decides exactly three rules:
   1. Mentor and operator roles require a verified email; in 1.0 only GitHub verifies one, so those
      roles require GitHub.
@@ -1231,7 +1231,8 @@ Owed before a public launch. Only the D30 signature (Phase 2) and the deployment
   rows, user ids in audit) and offers no deletion path. Schema cascades already support one; the
   follow-up must also decide what happens to `role.*` audit events kept forever. Tracker issue
   drafted with the tracker notes below; posted only after approval.
-- **D30 signature** by founder A (blocks Phase 2, not Phase 1).
+- **D30 signature** by founder A: the record and the brief's R06/D07/D30 rows are in place with
+  status `proposal`; founder A sets D30 `active` (blocks Phase 2, not Phase 1).
 - **Tracker drafts, posted only after approval:** the #20 AC (moved from #14 AC2), the #14 closing
   note, the GDPR issue above, and the PR #31 comment asking for the original `D07-login.md`.
 - **Deployment target decision** before Phase 4's production gate.
