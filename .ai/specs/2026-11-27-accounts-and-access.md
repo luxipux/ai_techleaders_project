@@ -1,7 +1,9 @@
 # Accounts and access (E01) and the access / entry-point primitives
 
-Status: ready for review (second architectural review revisions applied)
-PR: #30 · branch: `spec/accounts-and-access` · design-only
+Status: ready for review (third revision: design-review decisions of 2026-11-27 applied)
+PR: #30 · branch: `spec/accounts-and-access` · design-only; merges after PR #31 (discovery)
+Decision record (owed): `D30-login-password-mentees-only` partially supersedes R06/D07; proposed,
+pending founder A (Oliwia). Phase 2 starts only once D30 is `active` (see Decisions in play).
 Issues: #8 (E01), #13 (E01-S01), #14 (E01-S02)
 Source: `.ai/specs/product-brief.md`, `.ai/specs/backlog.md`
 Extends: `.ai/specs/implemented/2026-11-24-monorepo-foundation.md` (its step-3 follow-up "`/backend` authentication")
@@ -439,8 +441,13 @@ resource policies; list scoping is implemented with the first owned-resource lis
     cookies return `github_failed`. No required-code parser may intercept the error response and
     return JSON 400 instead. State/cookie validation also applies to cancellation.
     If a user initiated conversion while signed in, the callback must still have that actor and
-    GitHub must resolve to that same user (matching verified email for a new link); otherwise
-    return `github_conflict` without changing any account. This distinguishes authenticated
+    GitHub must resolve to that same user (matching verified email for a new link). If the GitHub
+    id or email belongs to a different user, return `github_conflict`. If it belongs to no user
+    but its primary verified email differs from the initiating user's email, redirect to
+    `/account?error=github_email_mismatch` ("Your GitHub account's primary verified email doesn't
+    match this account's email. Make it your primary verified email on GitHub, then try again.";
+    GitHub's email is not echoed). Neither case changes any account. Linking a different email
+    is not offered in E01. This distinguishes authenticated
     conversion of one's own account from anonymous recovery/claim and prevents accidental account
     switching. A lost initiating session returns `github_failed` and requires a fresh flow.
     It resolves the account in
@@ -457,7 +464,12 @@ resource policies; list scoping is implemented with the first owned-resource lis
        was turned off because your email was never verified; use GitHub").
        - Revoking roles matters only if a future story grants roles to unverified accounts. In E01
          `RoleService` refuses that, so this is defence in depth.
-    5. Otherwise → create a user with `emailVerifiedAt = now` and a GitHub identity.
+    5. Otherwise → create a user with `emailVerifiedAt = now` and a GitHub identity. `name` is
+       GitHub's `name`, or the GitHub login when that is null or empty.
+  - **Profile data on later sign-ins:** every GitHub sign-in refreshes `githubLogin` on the
+    identity. `User.name` is set once at creation and is not overwritten. `User.email` is never
+    re-synced from GitHub in E01: syncing would collide with the unique constraint and the claim
+    rules (3–4). Email changes come with a later profile/verification story.
   - Lock the target User row, re-check identity/email resolution under that lock, perform the
     resolution and create the new session in the same transaction. Rule 1 uses stable GitHub id;
     it does not require a returning identity to have a currently verified primary email.
@@ -503,7 +515,7 @@ resource policies; list scoping is implemented with the first owned-resource lis
     - registering with a GitHub account's email conflicts.
 
     This is a **conscious partial deviation from D07**, which offers the email/password fallback to
-    every role. See Decisions in play.
+    every role, recorded as D30 (pending founder A). See Decisions in play.
   - **Note for E02-S01 (invitations):** an invited mentor must sign in with GitHub before accepting.
     The acceptance step checks `actor.emailVerified`, and otherwise shows "Sign in with GitHub to
     accept this invitation" with the GitHub button (`next` set to the invitation link).
@@ -527,6 +539,9 @@ resource policies; list scoping is implemented with the first owned-resource lis
   - R18's shared operator note stays the record for actions done **outside** the product. E05-S01
     may later add an operator view of the log.
   - No PII beyond ids goes into `data`; emails live on `User`.
+  - `action` is a typed `AuditAction` union (E01: `role.granted`, `role.revoked`,
+    `account.claimed_by_github`). Later specs extend the union and must pick a retention for each
+    new action in the same change (see Retention).
 
 ### Retention
 
@@ -537,8 +552,19 @@ resource policies; list scoping is implemented with the first owned-resource lis
 - Remove sessions expired for at least 24 hours; index `expiresAt`. Remove throttle rows whose
   last window started over 48 hours ago (maximum auth window is one hour); index `windowStartedAt`.
   This also cleans keys for nonexistent users. Password success never deletes a throttle row.
-- Retain audit for 90 days; no application updates or ad hoc deletes, only this privileged
-  retention path. The existing `createdAt` index supports deletion. User ids and CLI labels can
+- Audit retention is set **per action** in one map in `audit-log.ts`:
+  `AUDIT_RETENTION: Record<AuditAction, { days: number } | "forever">`. Typecheck forces every new
+  action to choose; there is no runtime default. E01 values:
+
+  | Action | Retention |
+  |---|---|
+  | `account.claimed_by_github` | 90 days |
+  | `role.granted`, `role.revoked` | `forever` (low volume; answers "who made X an operator, and when") |
+
+  Cleanup deletes only actions with a `days` value, past their cutoff. No application updates or
+  ad hoc deletes, only this privileged retention path. Later families (E05-S01 fee/bounds,
+  E05-S02 disputes) choose their retention in their own specs. The existing `createdAt` index
+  supports deletion; add (`action`, `createdAt`) if a query plan needs it. User ids and CLI labels can
   still be personal data; "no emails" does not make the log anonymous. Account-claim notices
   are explanatory and expire with the event; loss of an old notice does not affect auth.
 
@@ -553,7 +579,7 @@ migration (`--name accounts-and-access`) with the snapshot.
 | `AuthIdentity` (`auth_identity`) | `...baseProperties`, `user` → User, `provider` enum `github \| password`, `subject` text (GitHub numeric id / normalized email), `secretHash` text? (argon2id PHC string, password only), `githubLogin` text? | unique (`provider`, `subject`); unique (`user`, `provider`); `on delete cascade` from user. |
 | `Session` (`session`) | `id` text PK = sha-256(token) hex, `user` → User, `expiresAt` datetime, `createdAt` datetime | indexes `user`, `expiresAt`; cascade from user. No `baseProperties` (the PK is the token hash, and there is no `updatedAt` churn). |
 | `UserRole` (`user_role`) | `...baseProperties`, `user` → User, `role` enum `mentor \| operator` | unique (`user`, `role`); cascade from user. `mentee` is implicit. |
-| `AuditEvent` (`audit_event`) | `id` uuid, `createdAt`, `actorUserId` uuid? (null for CLI/system), `actorLabel` text (`user` / `cli:<osUser>` / `system`), `action` text, `subjectType` text, `subjectId` text, `data` jsonb? | Append-only until scheduled 90-day retention deletion, no FK to user (survives user deletion within retention), index (`subjectType`, `subjectId`), index `createdAt`. |
+| `AuditEvent` (`audit_event`) | `id` uuid, `createdAt`, `actorUserId` uuid? (null for CLI/system), `actorLabel` text (`user` / `cli:<osUser>` / `system`), `action` text, `subjectType` text, `subjectId` text, `data` jsonb? | Append-only until scheduled per-action retention deletion, no FK to user (survives user deletion within retention), index (`subjectType`, `subjectId`), index `createdAt`. Retention per action (`AUDIT_RETENTION`); `role.*` kept forever. |
 | `AuthThrottle` (`auth_throttle`) | `key` text PK (e.g. `signin:email-ip:<email>:<ip>`), `count` int, `windowStartedAt` datetime | Atomic upsert counts attempts and resets elapsed windows; index `windowStartedAt`. No reset on success; scheduled cleanup removes stale keys. |
 
 Sensitive data:
@@ -590,7 +616,7 @@ row per throttle bucket key (IP, email + IP, or email; see Account flows).
 | `signInAction` | public | `email`, `password`, `next?` | redirect / `fail(invalid_credentials \| rate_limited \| validation_error)` |
 | `signOutAction` | signed-in | — | redirect `/` |
 | `GET /api/auth/github` | public | `next?` | 302 to GitHub; sets `dm_oauth_state`, `dm_oauth_verifier`, `dm_oauth_next` |
-| `GET /api/auth/github/callback` | public | success `{code,state}` or provider error `{error,state?,error_description?}`; adapter also handles missing/malformed values | always clear transaction cookies; 302 to safe `next` after commit, or `/sign-in?error=github_cancelled\|github_failed\|github_no_verified_email\|github_conflict` |
+| `GET /api/auth/github/callback` | public | success `{code,state}` or provider error `{error,state?,error_description?}`; adapter also handles missing/malformed values | always clear transaction cookies; 302 to safe `next` after commit, or `/sign-in?error=github_cancelled\|github_failed\|github_no_verified_email\|github_conflict`; same-user conversion with a different GitHub email → `/account?error=github_email_mismatch` |
 | `GET /api/health` | public | — | unchanged body; now built with `defineRoute` |
 
 `invalid_client_ip` is a validation error on register/password actions. Unexpected action errors
@@ -608,7 +634,7 @@ Env vars (in `.env.example`, server-only, loaded and validated by `auth-config.t
 | Variable | Notes |
 |---|---|
 | `APP_URL` | Default `http://localhost:3000`. Builds the redirect URI `${APP_URL}/api/auth/github/callback` and decides the `secure` cookie flag. |
-| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | Optional. When missing, the GitHub button is hidden and the start route returns 404. Email and password still work, and `npm run setup` still yields a working app. |
+| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | Optional. When missing, the GitHub button is hidden and the start route returns 404. Email and password still work, and `npm run setup` still yields a working app, but nobody can reach `/backend` or `/mentor` (roles need a GitHub-verified email). Local developers create a personal GitHub OAuth app with callback `http://localhost:3000/api/auth/github/callback`; the `npm run setup` output and `developer-setup` explain how. No unverified-grant bypass exists. |
 | `GITHUB_OAUTH_URL` (default `https://github.com`), `GITHUB_API_URL` (default `https://api.github.com`) | Test overrides used by e2e. |
 | `TRUSTED_PROXY_HOPS` | Default `0` for local dev's fixed bucket. Positive integer for deployed/production-build apps; `0` under `NODE_ENV=production` is a startup error. Number of trusted appending proxies, with direct app ingress blocked. |
 
@@ -639,6 +665,8 @@ operator-only.
 - **`/register`:** name, email, password, with "at least 12 characters" hint text.
 - **`/account`** (`account.self`): name, email, sign-in methods (GitHub login / password), roles,
   and the GitHub-claim notice when it applies.
+  - `?error=github_email_mismatch` shows the mismatch message from Account flows above the
+    "Switch to GitHub" button.
   - **Unverified-account hint** (password-only users): "Your email is unverified. Switching to
     GitHub verifies it and permanently disables password sign-in. Mentor and operator roles
     require GitHub." Show the full conversion warning and label the button "Switch to GitHub"
@@ -711,6 +739,16 @@ The system SHALL let a visitor sign in with GitHub and land signed in with their
 - THEN they have already seen the password/session-removal warning, and the callback can only
   convert that same initiating user's account; a different GitHub account gives `github_conflict`
   without changing either account
+
+##### Scenario: Conversion with a different GitHub email
+- WHEN a password user starts "Switch to GitHub" and authorizes a GitHub account unknown to
+  DevMentor whose primary verified email differs from theirs
+- THEN they return to `/account` with the email-mismatch message, which does not show GitHub's
+  email, and neither account nor password identity changes
+
+##### Scenario: Returning GitHub user's profile
+- WHEN a linked GitHub user signs in after changing their GitHub login, name or primary email
+- THEN the stored GitHub login is updated, while the DevMentor name and email stay unchanged
 
 ##### Scenario: Password sign-in races with a GitHub claim
 - WHEN password sign-in verifies the old hash while GitHub claims that user
@@ -847,6 +885,11 @@ rows and audit events according to the Retention section, with no per-record PII
 - THEN only rows beyond retention are deleted within the per-run batch limit, active records
   remain, and the second run safely continues or makes no changes
 
+##### Scenario: Role history outlives the audit window
+- WHEN cleanup runs over `role.granted`/`role.revoked` and `account.claimed_by_github` events older
+  than 90 days
+- THEN the account-claim events are deleted and the role events remain
+
 ## 📝 Testing
 
 - **Unit (100%):**
@@ -855,9 +898,11 @@ rows and audit events according to the Retention section, with no per-record PII
     no automatic flush; commit → cookie → redirect ordering; rethrow of all Next control flow;
   - `CurrentActor`: valid, expired and unknown cases with `fixedClock`; asserts no write and no cookie set;
   - `AccountService`: all five GitHub resolution branches, register conflict, dummy-hash path,
-    throttle window and lock;
+    throttle window and lock; same-user conversion with conflict vs `github_email_mismatch`;
+    name fallback to login; `githubLogin` refresh without name/email overwrite;
   - `RoleService` idempotency + audit; `definePolicy` / `assertCan` and User self/operator denials;
     CLI env loading, argument parsing, cleanup cutoffs/batch limits, pool closure and exit codes;
+    cleanup honours `AUDIT_RETENTION` (`forever` actions never deleted);
     list `scope` implementation/tests are deferred to E03-S02;
   - pages with `vi.mock("@/server/…")`.
 - **Architecture tests** (unit): exactly the five assertions listed under "Brand and architecture
@@ -902,7 +947,7 @@ rows and audit events according to the Retention section, with no per-record PII
     use the same browser origin. Start proxy/app before reporting the fixture ready.
   - The fake server tests state and PKCE success/error behavior, not just a happy profile fetch.
     Callback tests include error-without-code, missing state/cookies, wrong-account conversion,
-    returning identity with no current verified email and preservation of encoded `next`.
+    email-mismatch conversion, returning identity with no current verified email and preservation of encoded `next`.
   - In a disposable install, run the role and cleanup CLIs with `npm ci --omit=dev` and root env,
     verify success/failure exit codes and that the process closes its pool. No changes to the
     developer's install or shared database.
@@ -938,6 +983,11 @@ rows and audit events according to the Retention section, with no per-record PII
 - **Behavior change for anyone using `/backend` today:** it now needs an operator account. The
   founders run `npm run user:role -- grant --email … --role operator` once per environment.
   `npm run setup` output mentions it.
+- **Local development loses `/backend` without GitHub:** operator needs a GitHub-verified email, so
+  a developer without a GitHub OAuth app cannot open `/backend` or `/mentor`. Mitigation: setup
+  docs for a personal OAuth app; no bypass (design-review decision).
+- **Deployment assumption:** the CLI, cleanup schedule and client-IP trust assume a long-running
+  Node host behind one proxy (see Decisions in play). Unverified until a target is chosen.
 - **Q4a trade-off (accepted):**
   - Registration reveals whether an email has an account.
   - There is no self-service password reset.
@@ -956,24 +1006,50 @@ rows and audit events according to the Retention section, with no per-record PII
 
 ## 📝 Decisions in play
 
-- D07 / R06: **partial supersession for this spec**, accepted by the user on 2026-11-27 when
-  authorizing the architectural-review recommendations for PR #30:
-  - GitHub works for every role. Mentor/operator grants require verified email, so require GitHub.
-  - Password sign-in is available only to password-only mentees. Any successful conversion/claim
-    through GitHub, including a mentee's, permanently removes that password and existing sessions;
-    show the warning before OAuth. GitHub-linked users have no password fallback in E01.
-  - Q4a deliberately has no email verification/reset channel. It must not preserve an untrusted
-    password when recovering a potentially pre-registered account.
-  - This replaces the broader "email/password fallback for every role" within E01. The source
-    brief/backlog are not present in this checkout (journal locates them on discovery work);
-    synchronizing their D07 wording remains a source-doc follow-up, not a claim that founder A
-    separately approved it or an unresolved design choice in this revised spec.
+- D07 / R06: **partial supersession, recorded as D30 (proposed, pending founder A).** The brief's
+  only change path for R06/D07 is "a superseding record by founder A (Oliwia)", and founder A is a
+  separate person from the reviewer who accepted this design. D30
+  (`.ai/specs/research/decisions/D30-login-password-mentees-only.md`, added after PR #31 merges)
+  decides exactly three rules:
+  1. Mentor and operator roles require a verified email; in 1.0 only GitHub verifies one, so those
+     roles require GitHub.
+  2. Password sign-in is available only to password-only mentees.
+  3. Any GitHub conversion or claim, including a mentee's, permanently removes the password and
+     ends existing sessions; the warning is shown before OAuth.
+
+  Why: Q4a has no email channel, so an unverified password account cannot be trusted, and
+  whoever registers a founder's or invited mentor's email first must not receive their role.
+  Path to change: a superseding record by founder A, as for D07. D30 quotes the R06/D07 wording
+  verbatim from the brief, because `decisions/D07-login.md` is cited there but absent from the
+  repository; PR #31 is asked for the original. The same commit marks the brief's R06/D07 rows
+  "partially superseded by D30 (pending founder A)". Founder A signs by approving and setting
+  D30 to `active`. **Phase 2 does not start until D30 is `active`.**
 - R07 / D08: mentors by invitation. E01 provides `RoleService.grant`; there is no mentor
   self-registration.
 - D19 / R18: the operator is the founders. Operator role via CLI with audit; manual actions outside
   the product stay in the shared note.
 - N01, N02, D26: untouched. No video, no ratings; no ownership checks on shared material.
 - Other cited decisions/non-goals remain unchanged; D07 is partially superseded as recorded above.
+
+**Design-review decisions (2026-11-27).** Settled with the reviewer; binding for implementation:
+- *Deployment target:* not chosen yet. The design **assumes** a long-running Node host (VM or
+  container) behind exactly one appending reverse proxy (`TRUSTED_PROXY_HOPS=1`), with direct app
+  ingress blocked, a shell for `npm run user:role`, and system cron or the platform scheduler for
+  `npm run auth:cleanup`. Phase 4's production gate re-checks this assumption; a serverless target
+  requires a spec revision for the CLI and cleanup before deployment.
+- *Local access to `/backend`:* developers configure a personal GitHub OAuth app (documented in
+  the setup output and `developer-setup`). No unverified-grant bypass. A dev-only fake GitHub
+  provider may follow later if this proves painful.
+- *Audit retention:* per action through the typed `AUDIT_RETENTION` map; `role.*` kept forever,
+  `account.claimed_by_github` 90 days; new actions choose their retention in their own spec.
+- *GitHub profile sync:* refresh `githubLogin` on every sign-in; `name` set once (login fallback);
+  `email` never re-synced in E01.
+- *Conversion with a different GitHub email:* refused with `github_email_mismatch` and a specific
+  message; linking a different email is not offered in E01.
+- *Account deletion / GDPR:* out of scope for E01; launch-blocking follow-up (see Follow-ups).
+- *Session lifetime:* fixed 30 days, no sliding refresh.
+- *Delivery:* PR #30 (design) merges after PR #31; implementation ships as one PR per phase.
+  Phase 1 may start once #30 merges; Phase 2 waits for D30 to be `active`.
 
 ## 📝 Migration & Backward Compatibility
 
@@ -1005,6 +1081,11 @@ rows and audit events according to the Retention section, with no per-record PII
 4. **Phase 4 – Roles and areas** (#14 AC1, AC3; AC2 moved to #20).
 5. **Phase 5 – Docs and archive.**
 
+Each phase ships as its own implementation PR against `main`, after PR #30 merges. All five PRs
+share one implementation run journal (`.ai/runs/<start-date>-accounts-and-access-impl.md`), set to
+`done` only after Phase 5; this spec's journal closes when PR #30 merges. Phase 1 has no dependency
+on D30; Phase 2 starts only once D30 is `active`.
+
 Dependencies and exit gates are listed below. Each phase leaves a working app; production is not
 considered ready for privileged access until Phase 4's provider, bootstrap and ingress gates pass.
 Every phase runs lint, typecheck, build and 100% unit coverage; UI/route/database phases also run
@@ -1030,7 +1111,7 @@ health contract stays intact, including DB failures; all entry-point architectur
    degraded-response characterization tests stay green.
 
 ### Phase 2 – Password accounts
-**Depends on:** Phase 1. **Exit:** register/sign-in/sign-out and `/account` work without GitHub;
+**Depends on:** Phase 1 and D30 `active` (founder A). **Exit:** register/sign-in/sign-out and `/account` work without GitHub;
 cookie ordering, rollback, attempt budgets, proxy parsing and cleanup are verified.
 
 4. `db`: entities `User`, `AuthIdentity`, `Session`, `UserRole`, `AuditEvent`, `AuthThrottle`;
@@ -1072,7 +1153,8 @@ cannot leave old-password sessions or partial writes.
 
 ### Phase 4 – Roles and areas
 **Depends on:** Phase 3; production GitHub/trusted ingress configured and operator bootstrap
-prepared. **Exit:** areas deny inappropriate actors, role changes apply on the next request,
+prepared; the deployment target re-checked against the long-running-host assumption (Decisions in
+play) — a serverless target stops here for a spec revision. **Exit:** areas deny inappropriate actors, role changes apply on the next request,
 concurrent grants/audit and production-install CLI paths pass; daily cleanup is scheduled.
 
 10. `RoleService` + audit; CLI `user-role.ts` + `npm run user:role` (tsx `--conditions=react-server`).
@@ -1098,11 +1180,26 @@ docs and capability Deltas match tested behavior; source-decision follow-ups are
     - services take `actor` and apply resource policies; add safe AND-based `scope` in E03-S02;
     - new permissions go in `permissions.ts`;
     - owned resources need a policy with a negative test;
-    - document `npm run user:role`, `auth:cleanup`, retention, trusted ingress and the new env vars.
+    - document `npm run user:role`, `auth:cleanup`, retention, trusted ingress and the new env vars;
+    - new `AuditAction`s choose their retention in `AUDIT_RETENTION`.
 
-    Update `developer-setup` if the setup output changes.
-    Record the accepted partial D07 supersession for synchronization into discovery brief/backlog;
+    Update `developer-setup` and the `npm run setup` output with the personal GitHub OAuth app
+    steps needed to reach `/backend` locally.
+    Confirm D30 is `active` and the brief's R06/D07 rows point to it;
     preserve the intentional #14 AC2 → #20 move and its owed E2E ownership scenario.
 13. **Archive the Delta** into `.ai/specs/capabilities/accounts.md` and
     `.ai/specs/capabilities/access-control.md`. Move this spec to `implemented/`. Add a lesson for
     any pitfall found (e.g. `server-only` under tsx).
+
+## 📋 Follow-ups (launch-blocking)
+
+Owed before a public launch. Only the D30 signature (Phase 2) and the deployment decision
+(Phase 4's production gate) block implementation phases; the rest block launch only.
+- **Account deletion / GDPR erasure.** E01 stores personal data (email, name, IP-keyed throttle
+  rows, user ids in audit) and offers no deletion path. Schema cascades already support one; the
+  follow-up must also decide what happens to `role.*` audit events kept forever. Tracker issue
+  drafted with the tracker notes below; posted only after approval.
+- **D30 signature** by founder A (blocks Phase 2, not Phase 1).
+- **Tracker drafts, posted only after approval:** the #20 AC (moved from #14 AC2), the #14 closing
+  note, the GDPR issue above, and the PR #31 comment asking for the original `D07-login.md`.
+- **Deployment target decision** before Phase 4's production gate.
