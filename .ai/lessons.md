@@ -27,3 +27,4 @@ Don't duplicate: if a lesson already exists, update it instead.
 - [2026-11-24-next-title-template-scope](lessons/2026-11-24-next-title-template-scope.md) — a layout's `title.template` skips the page in its own segment; use `title.absolute` there
 - [2026-11-25-skills-untracked-on-main](lessons/2026-11-25-skills-untracked-on-main.md) — skills now live on main (`.claude/skills/*` symlinks to `.agents/skills/*`, ESLint-ignored); never restore them by copying
 - [2026-11-25-ci-tests-run-with-node-env-test](lessons/2026-11-25-ci-tests-run-with-node-env-test.md) — CI runs unit tests with NODE_ENV=test (sandbox: development); @next/env skips .env.local then, so pin NODE_ENV in such tests and check `env -u NODE_ENV`
+- [2026-11-27-product-owner-approves-decisions](lessons/2026-11-27-product-owner-approves-decisions.md) — the user is the product owner and approves decisions; brief owner columns name source authors, not approvers

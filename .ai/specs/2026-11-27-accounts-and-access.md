@@ -3,9 +3,7 @@
 Status: approved (2026-11-27, design review of PR #30; third revision plus pre-implement audit gaps)
 PR: #30 · branch: `spec/accounts-and-access` · design-only; merges after PR #31 (discovery)
 Decision record: `.ai/specs/research/decisions/D30-login-password-mentees-only.md` partially
-supersedes R06/D07; proposed, pending founder A (Oliwia). Phase 2 starts only once D30 is `active` (see Decisions in play).
-Readiness is phase-scoped: once this spec is approved, Phase 1 may be implemented (it encodes no
-R06/D07 rule); Phases 2–5 stay blocked until D30 is `active`.
+supersedes R06/D07; active, approved by the product owner on 2026-11-27 (see Decisions in play).
 Issues: #8 (E01), #13 (E01-S01), #14 (E01-S02)
 Source: `.ai/specs/product-brief.md`, `.ai/specs/backlog.md`
 Extends: `.ai/specs/implemented/2026-11-24-monorepo-foundation.md` (its step-3 follow-up "`/backend` authentication")
@@ -521,7 +519,7 @@ resource policies; list scoping is implemented with the first owned-resource lis
     - registering with a GitHub account's email conflicts.
 
     This is a **conscious partial deviation from D07**, which offers the email/password fallback to
-    every role, recorded as D30 (pending founder A). See Decisions in play.
+    every role, recorded as D30 (active). See Decisions in play.
   - **Note for E02-S01 (invitations):** an invited mentor must sign in with GitHub before accepting.
     The acceptance step checks `actor.emailVerified`, and otherwise shows "Sign in with GitHub to
     accept this invitation" with the GitHub button (`next` set to the invitation link).
@@ -1016,24 +1014,22 @@ rows and audit events according to the Retention section, with no per-record PII
 
 ## 📝 Decisions in play
 
-- D07 / R06: **partial supersession, recorded as D30 (proposed, pending founder A).** The brief's
-  only change path for R06/D07 is "a superseding record by founder A (Oliwia)", and founder A is a
-  separate person from the reviewer who accepted this design. D30
-  (`.ai/specs/research/decisions/D30-login-password-mentees-only.md`, added once PR #31 merged)
-  decides exactly three rules:
+- D07 / R06: **partially superseded by D30, active (approved by the product owner, 2026-11-27).**
+  The product owner decides this project's product rules; the brief's change path for R06/D07 is
+  "a superseding record approved by the product owner". D30
+  (`.ai/specs/research/decisions/D30-login-password-mentees-only.md`) decides exactly three rules:
   1. Mentor and operator roles require a verified email; in 1.0 only GitHub verifies one, so those
      roles require GitHub.
   2. Password sign-in is available only to password-only mentees.
   3. Any GitHub conversion or claim, including a mentee's, permanently removes the password and
      ends existing sessions; the warning is shown before OAuth.
 
-  Why: Q4a has no email channel, so an unverified password account cannot be trusted, and
-  whoever registers a founder's or invited mentor's email first must not receive their role.
-  Path to change: a superseding record by founder A, as for D07. D30 quotes the R06/D07 wording
-  verbatim from the brief, because `decisions/D07-login.md` is cited there but absent from the
-  repository; PR #31 is asked for the original. The same commit marks the brief's R06/D07 rows
-  "partially superseded by D30 (pending founder A)". Founder A signs by approving and setting
-  D30 to `active`. **Phase 2 does not start until D30 is `active`.**
+  Why: this spec's design answer Q4a gives 1.0 no email channel, so an unverified password
+  account cannot be trusted, and whoever registers a founder's or invited mentor's email first
+  must not receive their role. Review trigger: an email channel in 1.0 (for example
+  notifications) reopens D30. D30 quotes the R06/D07 wording verbatim from the brief, because
+  `decisions/D07-login.md` is cited there but absent from the repository; the brief's R06/D07
+  rows are marked "partially superseded by D30".
 - R07 / D08: mentors by invitation. E01 provides `RoleService.grant`; there is no mentor
   self-registration.
 - D19 / R18: the operator is the founders. Operator role via CLI with audit; manual actions outside
@@ -1059,7 +1055,7 @@ rows and audit events according to the Retention section, with no per-record PII
 - *Account deletion / GDPR:* out of scope for E01; launch-blocking follow-up (see Follow-ups).
 - *Session lifetime:* fixed 30 days, no sliding refresh.
 - *Delivery:* PR #30 (design) merges after PR #31; implementation ships as one PR per phase.
-  Phase 1 may start once #30 merges; Phase 2 waits for D30 to be `active`.
+  Phases start in order once #30 merges; D30 is active, so no phase waits on a decision record.
 
 ## 📝 Migration & Backward Compatibility
 
@@ -1102,8 +1098,7 @@ rows and audit events according to the Retention section, with no per-record PII
 
 Each phase ships as its own implementation PR against `main`, after PR #30 merges. All five PRs
 share one implementation run journal (`.ai/runs/<start-date>-accounts-and-access-impl.md`), set to
-`done` only after Phase 5; this spec's journal closes when PR #30 merges. Phase 1 has no dependency
-on D30; Phase 2 starts only once D30 is `active`. Each phase PR body lists its `Cradle` and
+`done` only after Phase 5; this spec's journal closes when PR #30 merges. Each phase PR body lists its `Cradle` and
 entity-registry changes (internal contracts per `BACKWARD_COMPATIBILITY.md`) and updates that
 file's tables for the protected surfaces it introduces.
 
@@ -1132,7 +1127,7 @@ health contract stays intact, including DB failures; all entry-point architectur
    degraded-response characterization tests stay green.
 
 ### Phase 2 – Password accounts
-**Depends on:** Phase 1 and D30 `active` (founder A). **Exit:** register/sign-in/sign-out and `/account` work without GitHub;
+**Depends on:** Phase 1. **Exit:** register/sign-in/sign-out and `/account` work without GitHub;
 cookie ordering, rollback, attempt budgets, proxy parsing and cleanup are verified.
 
 4. `db`: entities `User`, `AuthIdentity`, `Session`, `UserRole`, `AuditEvent`, `AuthThrottle`;
@@ -1217,7 +1212,7 @@ docs and capability Deltas match tested behavior; source-decision follow-ups are
 
     Update `developer-setup` and the `npm run setup` output with the personal GitHub OAuth app
     steps needed to reach `/backend` locally, including the sandbox-preview `APP_URL`.
-    Confirm D30 is `active` and the brief's R06/D07 rows point to it;
+    Confirm the brief's R06/D07 rows still point to D30;
     preserve the intentional #14 AC2 → #20 move and its owed E2E ownership scenario.
 13. **Archive the Delta** into `.ai/specs/capabilities/accounts.md` and
     `.ai/specs/capabilities/access-control.md`. Move this spec to `implemented/`. Add a lesson for
@@ -1225,14 +1220,12 @@ docs and capability Deltas match tested behavior; source-decision follow-ups are
 
 ## 📋 Follow-ups (launch-blocking)
 
-Owed before a public launch. Only the D30 signature (Phase 2) and the deployment decision
-(Phase 4's production gate) block implementation phases; the rest block launch only.
+Owed before a public launch. Only the deployment decision (Phase 4's production gate) blocks an
+implementation phase; the rest block launch only.
 - **Account deletion / GDPR erasure.** E01 stores personal data (email, name, IP-keyed throttle
   rows, user ids in audit) and offers no deletion path. Schema cascades already support one; the
   follow-up must also decide what happens to `role.*` audit events kept forever. Tracker issue
   drafted with the tracker notes below; posted only after approval.
-- **D30 signature** by founder A: the record and the brief's R06/D07/D30 rows are in place with
-  status `proposal`; founder A sets D30 `active` (blocks Phase 2, not Phase 1).
 - **Tracker drafts, posted only after approval:** the #20 AC (moved from #14 AC2), the #14 closing
-  note, the GDPR issue above, and the PR #31 comment asking for the original `D07-login.md`.
+  note, the GDPR issue above, and an issue asking for the original `D07-login.md` (PR #31 is merged).
 - **Deployment target decision** before Phase 4's production gate.

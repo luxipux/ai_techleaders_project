@@ -41,3 +41,8 @@ Status: in-progress
 - Covers: fourth pre-implement audit (`bb357c9`) kept no-go only because D30 is `proposed` (Phase 1 go). Fixed its two D30 findings in the record and the brief's D30 row: "Q4a" now names the spec's design answer (the brief's own ids are Q01–Q21, Q04 unused), and a review trigger reopens D30 if 1.0 gains an email channel such as the brief's in-scope notifications.
 - Decisions/pitfalls: spec-local question ids must not be cited bare in brief/decision records, which have their own Q-numbering.
 - Remaining: founder A sets D30 `active`, then rerun the audit; tracker drafts (#20 AC, #14 note, GDPR issue, D07-login.md request issue) await approval.
+
+## 2026-11-27 — correction: the product owner approves D30; Phase 2 unblocked
+- Covers: correction by the user, who is the product owner. Oliwia only provided input materials and does not decide, so earlier entries' "pending founder A" / "Oliwia's signature" no longer apply (kept as written, per the never-edit rule). D30 set `active` (approved by the product owner, 2026-11-27); brief R06/D07 change path is now "a superseding record approved by the product owner"; D30 row active; spec header, Decisions in play, Phasing, Phase 2 dependency and Follow-ups no longer wait on a signature.
+- Decisions/pitfalls: brief owner columns record source authors, not approvers; lesson added. Other brief rows still name founder A as owner and are unchanged here.
+- Remaining: rerun the pre-implement audit; tracker drafts (#20 AC, #14 note, GDPR issue, D07-login.md request issue) await approval.
