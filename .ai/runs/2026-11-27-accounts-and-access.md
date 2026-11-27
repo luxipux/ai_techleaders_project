@@ -46,3 +46,8 @@ Status: in-progress
 - Covers: correction by the user, who is the product owner. Oliwia only provided input materials and does not decide, so earlier entries' "pending founder A" / "Oliwia's signature" no longer apply (kept as written, per the never-edit rule). D30 set `active` (approved by the product owner, 2026-11-27); brief R06/D07 change path is now "a superseding record approved by the product owner"; D30 row active; spec header, Decisions in play, Phasing, Phase 2 dependency and Follow-ups no longer wait on a signature.
 - Decisions/pitfalls: brief owner columns record source authors, not approvers; lesson added. Other brief rows still name founder A as owner and are unchanged here.
 - Remaining: rerun the pre-implement audit; tracker drafts (#20 AC, #14 note, GDPR issue, D07-login.md request issue) await approval.
+
+## 2026-11-27 — pre-implement audit: go
+- Covers: fifth `om-pre-implement-spec` run on `af7486f` returned **go** (no Critical or Important finding); committed the report `.ai/analysis/pre-implement-2026-11-27-accounts-and-access.md`, which replaces the earlier uncommitted drafts.
+- Decisions/pitfalls: two nice-to-haves remain: dynamic import of `auth-config` in `instrumentation.ts` (Phase 2 step 5) and aligning the brief's founder-A owner columns if the product owner wants them to name approvers.
+- Remaining: merge PR #30 (closes this journal); tracker drafts (#20 AC, #14 note, GDPR issue, `D07-login.md` request issue) await approval; implementation not started.
