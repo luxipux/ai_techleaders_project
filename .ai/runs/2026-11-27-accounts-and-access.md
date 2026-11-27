@@ -36,3 +36,8 @@ Status: in-progress
 - Covers: rebased onto `main` with PR #31 (discovery) merged; added `.ai/specs/research/decisions/D30-login-password-mentees-only.md` (status proposed) in the N01/N02 record format, a D30 `proposal` row in the brief's Decisions table, and "partially superseded by D30 (pending founder A)" on the R06 and D07 rows; spec header and Follow-ups now point at the record.
 - Decisions/pitfalls: D30 quotes R06/D07 verbatim because `decisions/D07-login.md` is still absent after #31; only the password-fallback part is superseded, GitHub for every role stays. The rebase rewrites the PR #30 commits, so the push is a force-push.
 - Remaining: founder A sets D30 `active` (gates Phase 2); tracker drafts (#20 AC, #14 note, GDPR issue, D07-login.md request) await approval; PR #30 merge closes this journal.
+
+## 2026-11-27 — D30 wording fixed before founder A's signature
+- Covers: fourth pre-implement audit (`bb357c9`) kept no-go only because D30 is `proposed` (Phase 1 go). Fixed its two D30 findings in the record and the brief's D30 row: "Q4a" now names the spec's design answer (the brief's own ids are Q01–Q21, Q04 unused), and a review trigger reopens D30 if 1.0 gains an email channel such as the brief's in-scope notifications.
+- Decisions/pitfalls: spec-local question ids must not be cited bare in brief/decision records, which have their own Q-numbering.
+- Remaining: founder A sets D30 `active`, then rerun the audit; tracker drafts (#20 AC, #14 note, GDPR issue, D07-login.md request issue) await approval.
