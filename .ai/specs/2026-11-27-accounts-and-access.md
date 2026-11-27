@@ -1,9 +1,11 @@
 # Accounts and access (E01) and the access / entry-point primitives
 
-Status: ready for review (third revision: design-review decisions of 2026-11-27 applied)
+Status: approved (2026-11-27, design review of PR #30; third revision plus pre-implement audit gaps)
 PR: #30 · branch: `spec/accounts-and-access` · design-only; merges after PR #31 (discovery)
 Decision record (owed): `D30-login-password-mentees-only` partially supersedes R06/D07; proposed,
 pending founder A (Oliwia). Phase 2 starts only once D30 is `active` (see Decisions in play).
+Readiness is phase-scoped: once this spec is approved, Phase 1 may be implemented (it encodes no
+R06/D07 rule); Phases 2–5 stay blocked until D30 is `active`.
 Issues: #8 (E01), #13 (E01-S01), #14 (E01-S02)
 Source: `.ai/specs/product-brief.md`, `.ai/specs/backlog.md`
 Extends: `.ai/specs/implemented/2026-11-24-monorepo-foundation.md` (its step-3 follow-up "`/backend` authentication")
@@ -198,7 +200,7 @@ resource policies; list scoping is implemented with the first owned-resource lis
 |---|---|
 | `core` | `errors.ts`: new `UnauthorizedError` 401, `ForbiddenError` 403, `ConflictError` 409, `RateLimitedError` 429; the existing `NotFoundError` 404 (used by `assertCan`) and `ValidationError` 400 stay. `clock.ts`: `Clock { now(): Date }`, `systemClock`, `fixedClock(date)` for tests. `action-result.ts`: `ActionResult<T>`, `ok()`, `fail()` (framework-agnostic types, shared by app and ui). `redirect-target.ts`: `safeRedirectPath(value, fallback)`, which rejects `//`, `/\`, absolute URLs and control characters (open-redirect guard). |
 | `db` | Entities `User`, `AuthIdentity`, `Session`, `UserRole`, `AuditEvent`, `AuthThrottle` + one migration. Generic data helper `hashToken(token)` (sha-256 hex) in `helpers.ts`. No business rules here. |
-| `app/src/server/auth/` | `password-hasher.ts` (argon2id behind a `PasswordHasher` interface), `session-service.ts`, `auth-cookies.ts` (the only module calling `cookies()`: the session cookie and the three OAuth transaction cookies), `github-oauth.ts` (uses `auth-cookies.ts`), `client-ip.ts` (see Throttle), `account-service.ts` (register / password sign-in / GitHub resolve-or-link), `throttle-service.ts`, `auth-config.ts` (env parsed once with zod). |
+| `app/src/server/auth/` | `password-hasher.ts` (argon2id behind a `PasswordHasher` interface), `session-service.ts`, `auth-cookies.ts` (the only module calling `cookies()`: the session cookie and the three OAuth transaction cookies), `github-oauth.ts` (uses `auth-cookies.ts`), `client-ip.ts` (see Throttle), `account-service.ts` (register / password sign-in / GitHub resolve-or-link), `throttle-service.ts`, `auth-config.ts` (env parsed once with zod). `src/instrumentation.ts`: `register()` validates `auth-config` at server start (see Configuration validation). |
 | `app/src/server/access/` | `actor.ts` (`Actor` type, `CurrentActor` scoped service), `roles.ts`, `permissions.ts` (catalog), `policy.ts` (`definePolicy`), `policies/user.ts`, `guard.ts` (`defineAction`, `defineRoute`, `definePage`, `requireActor`, `requirePermission`), `role-service.ts` (grant/revoke + audit), `audit-log.ts`. |
 | `app/src/cli/` | `user-role.ts`: `npm run user:role -- grant\|revoke --email <e> --role mentor\|operator` (Q3a); `auth-cleanup.ts`: bounded retention cleanup. Both load root env before ORM initialization and close the pool in `finally`. |
 | `app/src/app/` | `(frontend)/sign-in`, `(frontend)/register`, `(frontend)/account`, `(frontend)/mentor`, `api/auth/github/route.ts` (start), `api/auth/github/callback/route.ts`, `forbidden.tsx`, `(frontend)/_components/form/*`, `(frontend)/_components/site-header.tsx`, `src/navigation.ts`. `/backend` becomes operator-only. |
@@ -225,6 +227,10 @@ resource policies; list scoping is implemented with the first owned-resource lis
     render, where Next 16 forbids setting cookies (`cookies.md`, "Setting cookies is not supported
     during Server Component rendering"), and pages never flush.
   - An invalid, expired or unknown token returns anonymous.
+  - A database or configuration error **propagates** from `get()`, so guards fail closed.
+    `getForDisplay(): Promise<Actor>` is the only fail-open path: it returns anonymous and logs
+    the error (without token or email). Only the site header uses it; menu visibility is not an
+    authorization boundary, so public pages keep rendering when the database is down.
   - The expiry is a fixed 30 days, with no sliding refresh. Sign-in may delete a user's expired
     sessions within its transaction; periodic cleanup also removes sessions of users who never
     sign in again (see Retention).
@@ -634,7 +640,7 @@ Env vars (in `.env.example`, server-only, loaded and validated by `auth-config.t
 | Variable | Notes |
 |---|---|
 | `APP_URL` | Default `http://localhost:3000`. Builds the redirect URI `${APP_URL}/api/auth/github/callback` and decides the `secure` cookie flag. |
-| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | Optional. When missing, the GitHub button is hidden and the start route returns 404. Email and password still work, and `npm run setup` still yields a working app, but nobody can reach `/backend` or `/mentor` (roles need a GitHub-verified email). Local developers create a personal GitHub OAuth app with callback `http://localhost:3000/api/auth/github/callback`; the `npm run setup` output and `developer-setup` explain how. No unverified-grant bypass exists. |
+| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | Optional. When missing, the GitHub button is hidden and the start route returns 404. Email and password still work, and `npm run setup` still yields a working app, but nobody can reach `/backend` or `/mentor` (roles need a GitHub-verified email). Local developers create a personal GitHub OAuth app with callback `http://localhost:3000/api/auth/github/callback`; the `npm run setup` output and `developer-setup` explain how. In a sandbox preview, set `APP_URL` to the preview origin and register that origin's callback in the OAuth app. No unverified-grant bypass exists. |
 | `GITHUB_OAUTH_URL` (default `https://github.com`), `GITHUB_API_URL` (default `https://api.github.com`) | Test overrides used by e2e. |
 | `TRUSTED_PROXY_HOPS` | Default `0` for local dev's fixed bucket. Positive integer for deployed/production-build apps; `0` under `NODE_ENV=production` is a startup error. Number of trusted appending proxies, with direct app ingress blocked. |
 
@@ -645,6 +651,10 @@ operator-only.
 - **Site header** (frontend, Server Component). It reads the navigation registry (`src/navigation.ts`:
   `{ href, label, access }[]`) filtered by `hasPermission(actor)`.
   Later epics add items to the registry instead of editing headers.
+  - The header resolves the actor with `CurrentActor.getForDisplay()`. If the lookup fails, it
+    renders the anonymous menu, so `/` and other public pages still render with the database
+    down (today's frontend layout is DB-free). Protected pages still fail closed through their
+    guards. Reading the session cookie makes frontend pages dynamic; this is intended.
   - Anonymous: "Sign in" and "Register".
   - Signed in: "Account", "Mentor workspace" (mentor), "Operator" (operator → `/backend`), and a
     "Sign out" button form.
@@ -966,7 +976,7 @@ rows and audit events according to the Retention section, with no per-record PII
 | Forgotten password, no GitHub account under that email | No recovery in 1.0 (Q4a); register under another address. |
 | Session row deleted (sign-out elsewhere, GitHub claim) | The next request is anonymous; the page redirects to sign-in; a stale action form returns `unauthorized` with a sign-in link. |
 | Role revoked mid-session | The next request loses the area (roles are read on every request). |
-| Database down | Protected guards fail closed (500, no protected data). Public `/api/health` still returns degraded JSON 503/no-store. OAuth external failure does not start a transaction. |
+| Database down | Protected guards fail closed (500, no protected data). Public pages render with the anonymous header (`getForDisplay()` fallback, logged). Public `/api/health` still returns degraded JSON 503/no-store. OAuth external failure does not start a transaction. |
 | Two GitHub accounts with the same verified email | Rule 3: the second one is refused with `github_conflict`; the first stays linked. |
 | Argon2 cost | Pin argon2id m=19456, t=2, p=1 as the initial cost; benchmark on deployment hardware, do not promise 50 ms. Attempt budgets bound calls before hashing, including successful requests. |
 | `authInterrupts` is experimental | Pin supported Next behavior and direct-HTTP 403 tests. If removed upstream, redesign the pre-streaming denial boundary before upgrade; rendering a component alone does not set HTTP 403. |
@@ -1070,8 +1080,17 @@ rows and audit events according to the Retention section, with no per-record PII
   backend as a rollback workaround; roll back code only to a version preserving access protection.
 - New APP_URL/GITHUB_* variables have local-development defaults/optional providers; deployed
   production requires secure APP_URL (except loopback test fixture), positive TRUSTED_PROXY_HOPS,
-  blocked direct ingress and daily cleanup scheduling. Runtime bootstrap validates config before
-  serving requests; building static assets must not depend on runtime secrets or proxy settings.
+  blocked direct ingress and daily cleanup scheduling.
+- **Configuration validation:** `src/instrumentation.ts` exports `register()`, which Next calls once
+  when a server instance starts and awaits before handling requests. Under the Node.js runtime
+  (`process.env.NEXT_RUNTIME === "nodejs"`) it parses `auth-config`, so a misconfigured
+  production (`TRUSTED_PROXY_HOPS=0`, non-loopback http `APP_URL`, half-set `GITHUB_*`) fails at
+  start, not on the first sign-in. `next build` does not call it, so building needs no runtime
+  secrets or proxy settings. The CLIs call the same parser after loading root env.
+- **BC doc maintenance:** each phase PR adds the protected surfaces it introduces to
+  `BACKWARD_COMPATIBILITY.md` (§1 new `@devmentor/core` entry points; §2 new routes and pages;
+  §4 `APP_URL`, `GITHUB_*`, `TRUSTED_PROXY_HOPS`; §5 `user:role`, `auth:cleanup`) and records the
+  session cookie name (`dm_session` / `__Host-dm_session`) as a protected surface.
 
 ## 📋 Phasing
 
@@ -1084,7 +1103,9 @@ rows and audit events according to the Retention section, with no per-record PII
 Each phase ships as its own implementation PR against `main`, after PR #30 merges. All five PRs
 share one implementation run journal (`.ai/runs/<start-date>-accounts-and-access-impl.md`), set to
 `done` only after Phase 5; this spec's journal closes when PR #30 merges. Phase 1 has no dependency
-on D30; Phase 2 starts only once D30 is `active`.
+on D30; Phase 2 starts only once D30 is `active`. Each phase PR body lists its `Cradle` and
+entity-registry changes (internal contracts per `BACKWARD_COMPATIBILITY.md`) and updates that
+file's tables for the protected surfaces it introduces.
 
 Dependencies and exit gates are listed below. Each phase leaves a working app; production is not
 considered ready for privileged access until Phase 4's provider, bootstrap and ingress gates pass.
@@ -1117,22 +1138,26 @@ cookie ordering, rollback, attempt budgets, proxy parsing and cleanup are verifi
 4. `db`: entities `User`, `AuthIdentity`, `Session`, `UserRole`, `AuditEvent`, `AuthThrottle`;
    `hashToken`; generate/review migration + snapshot, including retention indexes; unit tests and
    throwaway migrate/down/migrate checks.
-5. Add `auth-config.ts`, runtime bootstrap validation and `.env.example` now, before cookies/IP
-   need them. Add `PasswordHasher` (pinned argon2id, `serverExternalPackages`), `SessionService`,
+5. Add `auth-config.ts`, its startup validation in `src/instrumentation.ts` `register()` (unit
+   tests: valid config, each startup error, non-Node runtime skipped) and `.env.example` now,
+   before cookies/IP need them. Add the four new env vars to `BACKWARD_COMPATIBILITY.md` §4. Add `PasswordHasher` (pinned argon2id, `serverExternalPackages`), `SessionService`,
    `auth-cookies`, `client-ip`, `ThrottleService` and `AccountService` (register/password sign-in).
    `CurrentActor` reads real sessions. Add `AuditLog`, `definePolicy`/`assertCan` and the User policy
-   with `/account` as its first consumer. Implement explicit service transactions, post-commit
+   with `/account` as its first consumer. `CurrentActor.get()` fails closed;
+   `getForDisplay()` falls back to anonymous (unit-tested both ways). Implement explicit service transactions, post-commit
    adapter cookies and the user-lock/re-read session issuance protocol. Add runtime env loader,
    `auth:cleanup` and pool closure. Unit tests with fake EM/fixedClock verify logic, not SQL rollback.
 6. Frontend form primitives, the site header with the navigation registry, `/register`, `/sign-in`
    (email form), `/account` via `definePage({ access: "account.self", returnTo: "/account" })`,
    and sign-out. Explain irreversible GitHub conversion even while its button is unconfigured;
-   signed-in visits to register/sign-in redirect to account. Add page/form/encoded-next tests.
+   signed-in visits to register/sign-in redirect to account. Add page/form/encoded-next tests and
+   a header test proving a failed actor lookup renders the anonymous menu.
 7. `packages/e2e/src/forwarding-proxy.ts`; the app runs behind it with `TRUSTED_PROXY_HOPS=1`;
    `Browser` sets a per-session `x-e2e-client-ip`. `tests/auth.e2e.ts`: register → sign out → sign
    in; warning; wrong password; sign-out redirect; actual upsert attempt budgets/windows under
    concurrency; spoofed XFF; invalid/short chain refusal; real rollback/cookie ordering; bounded
-   cleanup cutoffs and repeatability. APP_URL uses the external proxy port from this phase onward.
+   cleanup cutoffs and repeatability. Extend the isolated DB-outage fixture to `/`: it renders the
+   anonymous header with the database down. APP_URL uses the external proxy port from this phase onward.
 
 ### Phase 3 – GitHub sign-in
 **Depends on:** Phase 2's config, transaction/session protocol and warning UI. **Exit:** success,
@@ -1158,6 +1183,9 @@ play) — a serverless target stops here for a spec revision. **Exit:** areas de
 concurrent grants/audit and production-install CLI paths pass; daily cleanup is scheduled.
 
 10. `RoleService` + audit; CLI `user-role.ts` + `npm run user:role` (tsx `--conditions=react-server`).
+    The scripts live in `@devmentor/app`; root `package.json` gets `user:role` and `auth:cleanup`
+    delegating with `-w @devmentor/app` (Phase 2 adds `auth:cleanup` the same way), so the
+    documented root commands work.
     Reuse Phase 2's env loader/pool lifecycle. Add `forbidden.tsx`, `/mentor` placeholder and change
     `/backend` page to `operator.backend` with explicit returnTo; layouts are not the authorization
     boundary. Add role-aware header items. RoleService refuses unverified accounts and serializes
@@ -1181,10 +1209,14 @@ docs and capability Deltas match tested behavior; source-decision follow-ups are
     - new permissions go in `permissions.ts`;
     - owned resources need a policy with a negative test;
     - document `npm run user:role`, `auth:cleanup`, retention, trusted ingress and the new env vars;
-    - new `AuditAction`s choose their retention in `AUDIT_RETENTION`.
+    - new `AuditAction`s choose their retention in `AUDIT_RETENTION`;
+    - add `user:role` and `auth:cleanup` to the AGENTS.md command table.
+
+    Confirm `BACKWARD_COMPATIBILITY.md` lists every surface this spec introduced (see
+    Configuration validation / BC doc maintenance).
 
     Update `developer-setup` and the `npm run setup` output with the personal GitHub OAuth app
-    steps needed to reach `/backend` locally.
+    steps needed to reach `/backend` locally, including the sandbox-preview `APP_URL`.
     Confirm D30 is `active` and the brief's R06/D07 rows point to it;
     preserve the intentional #14 AC2 → #20 move and its owed E2E ownership scenario.
 13. **Archive the Delta** into `.ai/specs/capabilities/accounts.md` and
