@@ -10,7 +10,7 @@ Status: done
 ---
 
 ## 2026-11-26
-- Covers: `discovery` config block (no domain expert, no designer), marked blocks in `SDLC.md` (before-intake paragraph, Product owner role, Definition of Ready, protected product decisions, amending note), rewritten Discovery and Intake rows, `.ai/specs/research/.gitkeep`.
+- Covers: `discovery` config block (no domain expert, designer), marked blocks in `SDLC.md` (before-intake paragraph, Product owner role, Definition of Ready, protected product decisions, amending note), rewritten Discovery and Intake rows, `.ai/specs/research/.gitkeep`.
 - Decisions/pitfalls: the delivery-only Discovery and Intake rows were replaced (old text is in git history); the delivery Designer bullet is untouched. `AGENTS.md` has no task-routing table, so no routing row was added and no instruction file was created. All four product skills (`om-discover`, `om-synthetic-users`, `om-backlog`, `om-mockup-prototype`) are installed.
 - Remaining: commit/PR on the maintainer's go; next step is `/om-discover` (no brief yet).
 
@@ -22,3 +22,8 @@ Status: done
   - the superseded quick-pass brief in `.ai/specs/archive/`.
 - Decisions/pitfalls: lands before the accounts-and-access spec PR (#30), which cites the brief and the backlog. The config sets `discovery.roles.designer: true`, while the entry above says "no designer"; left as is for the maintainer to confirm.
 - Remaining: none for this task.
+
+## 2026-11-27
+- Covers: corrects the 2026-11-26 entry to "designer", matching `discovery.roles.designer: true` and the Designer role in `SDLC.md`.
+- Decisions/pitfalls: the maintainer confirmed there is a designer and asked for the earlier entry to be fixed in place, a deliberate exception to the append-only rule. The earlier 2026-11-27 note about the mismatch is now resolved.
+- Remaining: none.
